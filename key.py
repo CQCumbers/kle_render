@@ -1,5 +1,5 @@
 from PIL import Image, ImageMath, ImageColor, ImageDraw, ImageFont
-import math
+import math, textwrap
 
 # Key and deserialise() modified from https://github.com/jackhumbert/kle-image-creator
 class Key(object):
@@ -86,7 +86,17 @@ class Key(object):
         return key_img
 
     def decal_key(self):
-        key_img = Image.new('RGBA', (int(self.width*self.u()), int(self.height*self.u())))
+        scale_factor = 7
+        min_size = 24
+        line_spacing = 20
+        labels = [text.upper() for text in self.labels] # only uppercase text on SA
+
+        gotham = ImageFont.truetype(self.font_path, int(self.font_size*scale_factor)+min_size)
+        w = max([gotham.getsize(text)[0] for text in labels]) # max of widths
+        h = sum([gotham.getsize(text)[1] for text in labels]) # sum of heights
+        h += line_spacing*(len([text for text in labels if len(text) > 0])-1)
+
+        key_img = Image.new('RGBA', (w+24, h+24))
         return key_img
 
     def text_key(self, key_img): # convert for use with list of labels
@@ -99,6 +109,9 @@ class Key(object):
         gotham = ImageFont.truetype(self.font_path, int(self.font_size*scale_factor)+min_size)
         draw = ImageDraw.Draw(key_img)
         w = max([gotham.getsize(text)[0] for text in labels]) # max of widths
+        if w > key_img.width:
+            labels = [line for label in labels for line in textwrap.wrap(label, width=int(key_img.width/gotham.getsize("a")[0]))]
+            w = max([gotham.getsize(text)[0] for text in labels])
         h = sum([gotham.getsize(text)[1] for text in labels]) # sum of heights
         h += line_spacing*(len([text for text in labels if len(text) > 0])-1)
         c = ImageColor.getrgb(self.font_color)
