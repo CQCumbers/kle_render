@@ -5,17 +5,17 @@ import json, copy, html
 def render_keyboard(data):
     border = 24
     keys = data['keys']
-    max_x = max([key.location()[2] for key in keys]) + 2*border
-    max_y = max([key.location()[3] for key in keys]) + 2*border
+    max_x = max([key.rough_location()[2] for key in keys]) + 2*border
+    max_y = max([key.rough_location()[3] for key in keys]) + 2*border
     if len(data['meta']) > 0:
         c = ImageColor.getrgb(data['meta']['backcolor'])
     else:
         c = ImageColor.getrgb('#000000')
     keyboard = Image.new('RGBA', (max_x, max_y), color=c)
     for key in keys:
-        location = tuple(int(coord+border) for coord in key.location())
         key_img = key.render()
-        keyboard.paste(key_img, (int(key.x*key.u), int(key.y*key.u)), mask=key_img)
+        location = [int(coord+border) for coord in key.location(key_img)]
+        keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
     return keyboard
 
 def deserialise(rows): # where rows is a dictionary version of Keyboard Layout Editor's JSON Output
@@ -38,10 +38,11 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
                     current.x += current.width
                     current.width = current.height = 1.0
                     current.x2 = current.y2 = current.width2 = current.height2 = 0.0
-                    current.nub = current.stepped = current.decal = False
+                    current.nub = current.stepped = current.stepped = current.decal = False
                 else:
                     if 'r' in key:
                         current.rotation_angle = key['r']
+                        current.y = 0
                     if 'rx' in key:
                         current.rotation_x = cluster['x'] = key['rx']
                     if 'ry' in key:
@@ -86,7 +87,7 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
             current.y += 1.0;
         elif 'backcolor' in row:
             meta['backcolor'] = row['backcolor'].replace(';', '')
-        current.x = current.rotation_x
+        current.x = 0 #current.rotation_x
     return {'meta': meta, 'keys': keys}
 
 

@@ -1,10 +1,8 @@
 from PIL import Image, ImageMath, ImageColor, ImageDraw, ImageFont
+import math
 
 # Key and deserialise() modified from https://github.com/jackhumbert/kle-image-creator
 class Key(object):
-
-    base_img = Image.open(r'SA_base.jpg').convert('RGBA') # SA photo by Madhias (Deskthority), GMK from official renders
-    u = base_img.width
     font_path = r'NotoRounded.otf'
 
     def __init__(self):
@@ -31,9 +29,33 @@ class Key(object):
         self.stepped = False
         self.decal = False
 
-    def location(self): # get pixel location of key as (left, upper, right, lower)
-        u = self.u
-        return (int(self.x*u), int(self.y*u), int(self.x*u + self.width*u), int(self.y*u + self.height*u))
+    def base_img(self):
+        if self.profile in ('DCS', 'OEM', 'GMK'): # GMK technically not supported by KLE yet
+            return Image.open(r'GMK_base.jpg').convert('RGBA') # GMK photo from official renders
+        else:
+            return Image.open(r'SA_base.jpg').convert('RGBA') # SA photo by Madhias (Deskthority)
+
+    def u(self):
+        return self.base_img().width
+
+    def location(self, key_img): # get pixel location of key as (left, upper, right, lower)
+        u = self.u()
+        x, y = self.x, self.y
+        if self.rotation_angle != 0:
+            rx, ry = self.rotation_x, self.rotation_y # center about which to rotate key
+            a = self.rotation_angle * math.pi / 180
+            x2, y2 = x*math.cos(a) - y*math.sin(a), y*math.cos(a) + x*math.sin(a)
+
+            left, top = -self.width/2, -self.height/2
+            left2, top2 = left*math.cos(a) - top*math.sin(a), top*math.cos(a) + left*math.sin(a)
+
+            x, y = rx + x2 - key_img.width/u/2 - left2, ry + y2 - key_img.height/u/2 - top2
+        return (int(x*u), int(y*u), int(x*u + key_img.width), int(y*u + key_img.height))
+
+    def rough_location(self): # not accurate - assumes no rotations, but doesn't require rendering
+        u = self.u()
+        x, y = self.x, self.y
+        return (int(x*u), int(y*u), int(x*u + self.width*u), int(y*u + self.height*u))
 
     def tint_key(self, key_img): #a image of the key, and a hex color code string
         color = ImageColor.getrgb(self.color)
@@ -44,30 +66,27 @@ class Key(object):
         return Image.merge('RGBA', (r, g, b, a))
 
     def stretch_key(self): # width and height of key in units
-        base_img = self.base_img
-        u = self.u
-        if self.width == 1.0 and self.height == 1.0:
-            return base_img
-        else:
-            width, height = int(self.width*u), int(self.height*u) # Width & Height of image representing key
-            key_img = Image.new('RGBA', (width, height))
-            key_img.paste(base_img, (0, 0, u, u))
-            if width != u:
-                center_part = base_img.crop((int(u/2), 0, int(u/2) + 1, u)) # horizontal middle strip of image
-                right_part = base_img.crop((int(u/2) + 1, 0, u, u))
-                for i in range(width - u + 1):
-                    key_img.paste(center_part, (int(u/2) + i, 0, int(u/2) + i + 1, u))
-                key_img.paste(right_part, (width - right_part.width, 0, width, u))
-            if height != u:
-                middle_part = key_img.crop((0, int(u/2), width, int(u/2) + 1)) # vertical middle strip of image
-                bottom_part = key_img.crop((0, int(u/2) + 1, width, u))
-                key_img.paste(bottom_part, (0, height - bottom_part.height, width, height))
-                for i in range(height - u + 1):
-                    key_img.paste(middle_part, (0, int(u/2) + i, key_img.width, int(u/2) + i + 1))
-            return key_img
+        base_img = self.base_img()
+        u = self.u()
+        width, height = int(self.width*u)+1, int(self.height*u)+1 # Width & Height of image representing key
+        key_img = Image.new('RGBA', (width, height)) # Lots of +1s to avoid unsightly gaps between keys
+        key_img.paste(base_img, (0, 0, u, u))
+        if width != u:
+            center_part = base_img.crop((int(u/2), 0, int(u/2)+1, u)) # horizontal middle strip of image
+            right_part = base_img.crop((int(u/2)+1, 0, u, u))
+            for i in range(width - u + 1):
+                key_img.paste(center_part, (int(u/2) + i, 0, int(u/2) + i + 1, u))
+            key_img.paste(right_part, (width - right_part.width, 0, width, u))
+        if height != u:
+            middle_part = key_img.crop((0, int(u/2), width, int(u/2)+1)) # vertical middle strip of image
+            bottom_part = key_img.crop((0, int(u/2)+1, width, u))
+            for i in range(height - u + 1):
+                key_img.paste(middle_part, (0, int(u/2) + i, key_img.width, int(u/2) + i + 1))
+            key_img.paste(bottom_part, (0, height - bottom_part.height, width, height))
+        return key_img
 
     def decal_key(self):
-        key_img = Image.new('RGBA', (int(self.width*self.u), int(self.height*self.u)))
+        key_img = Image.new('RGBA', (int(self.width*self.u()), int(self.height*self.u())))
         return key_img
 
     def text_key(self, key_img): # convert for use with list of labels
@@ -94,4 +113,5 @@ class Key(object):
             key_img = self.stretch_key()
             key_img = self.tint_key(key_img)
         key_img = self.text_key(key_img)
+        key_img = key_img.rotate(-self.rotation_angle, resample=Image.BICUBIC, expand=1)
         return key_img
