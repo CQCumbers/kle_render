@@ -10,11 +10,13 @@ __pycache__/
 .Python
 env/
 build/
+bin/
 develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
+include/
 lib/
 lib64/
 parts/
@@ -95,3 +97,6 @@ ENV/
 
 # mkdocs documentation
 /site
+
+# Mac OS X custom attribute files
+.DS_Store
