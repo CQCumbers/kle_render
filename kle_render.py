@@ -1,6 +1,6 @@
 from PIL import Image, ImageColor
 from key import Key
-import json, copy, html
+import copy, html
 
 def render_keyboard(data):
     border = 24
@@ -89,9 +89,3 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
             meta['backcolor'] = row['backcolor'].replace(';', '')
         current.x = 0 #current.rotation_x
     return {'meta': meta, 'keys': keys}
-
-
-with open(r'keyboard-layout.json') as data_file:
-    data = json.load(data_file)
-new_img = render_keyboard(deserialise(data))
-new_img.save(r'render_output.jpg', quality=80)

@@ -31,9 +31,9 @@ class Key(object):
 
     def base_img(self):
         if self.profile in ('DCS', 'OEM', 'GMK'): # GMK technically not supported by KLE yet
-            return Image.open(r'GMK_base.jpg').convert('RGBA') # GMK photo from official renders
+            return Image.open(r'GMK_base.jpg').convert('RGBA').resize((200, 200), Image.ANTIALIAS) # GMK photo from official renders
         else:
-            return Image.open(r'SA_base.jpg').convert('RGBA') # SA photo by Madhias (Deskthority)
+            return Image.open(r'SA_base.jpg').convert('RGBA').resize((200, 200), Image.ANTIALIAS) # SA photo by Madhias (Deskthority)
 
     def u(self):
         return self.base_img().width
@@ -86,9 +86,9 @@ class Key(object):
         return key_img
 
     def decal_key(self):
-        scale_factor = 7
-        min_size = 24
-        line_spacing = 20
+        scale_factor = 8
+        min_size = 8
+        line_spacing = 16
         labels = [text.upper() for text in self.labels] # only uppercase text on SA
 
         gotham = ImageFont.truetype(self.font_path, int(self.font_size*scale_factor)+min_size)
@@ -96,27 +96,33 @@ class Key(object):
         h = sum([gotham.getsize(text)[1] for text in labels]) # sum of heights
         h += line_spacing*(len([text for text in labels if len(text) > 0])-1)
 
-        key_img = Image.new('RGBA', (w+24, h+24))
+        key_img = Image.new('RGBA', (w+24, h+108))
         return key_img
 
     def text_key(self, key_img): # convert for use with list of labels
         scale_factor = 7
-        min_size = 24
-        line_spacing = 20
-        offset = 20 # pixels to shift text upwards to center it in keycap top
+        min_size = 16
+        line_spacing = 16
+        if self.decal:
+            offset = 0
+            alignment = 'left'
+        else:
+            offset = 12 # pixels to shift text upwards to center it in keycap top
+            alignment = 'center'
         labels = [text.upper() for text in self.labels] # only uppercase text on SA
+        width_limit = key_img.width - 42 # 60 is combined width of keycap sides in base image
 
         gotham = ImageFont.truetype(self.font_path, int(self.font_size*scale_factor)+min_size)
         draw = ImageDraw.Draw(key_img)
-        w = max([gotham.getsize(text)[0] for text in labels]) # max of widths
-        if w > key_img.width:
-            labels = [line for label in labels for line in textwrap.wrap(label, width=int(key_img.width/gotham.getsize("a")[0]))]
+        w = max([gotham.getsize(text)[0] for text in labels]) # max of label widths
+        if w > width_limit and not self.decal:
+            labels = [line for label in labels for line in textwrap.wrap(label, width=int(width_limit/(gotham.getsize("L")[0])))]
             w = max([gotham.getsize(text)[0] for text in labels])
         h = sum([gotham.getsize(text)[1] for text in labels]) # sum of heights
         h += line_spacing*(len([text for text in labels if len(text) > 0])-1)
         c = ImageColor.getrgb(self.font_color)
         c = tuple(band + 0x26 for band in c) # Simulates reflectivity
-        draw.multiline_text((int((key_img.width-w)/2), int((key_img.height-h)/2 - offset)), '\n'.join(labels), font=gotham, fill=c, spacing=line_spacing, align='center')
+        draw.multiline_text((int((key_img.width-w)/2), int((key_img.height-h)/2 - offset)), '\n'.join(labels), font=gotham, fill=c, spacing=line_spacing, align=alignment)
         return key_img 
 
     def render(self):
