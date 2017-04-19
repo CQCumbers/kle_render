@@ -16,7 +16,7 @@ def render_keyboard(data):
         key_img = key.render()
         location = [int(coord+border) for coord in key.location(key_img)]
         keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
-    return keyboard
+    return keyboard.resize((int(max_x/3), int(max_y/3)), resample=Image.LANCZOS) #Lanczos is high quality downsampling algorithm
 
 def deserialise(rows): # where rows is a dictionary version of Keyboard Layout Editor's JSON Output
     # Initialize with defaults

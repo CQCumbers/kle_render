@@ -100,6 +100,11 @@ class Key(object):
         return key_img
 
     def text_key(self, key_img): # convert for use with list of labels
+        labels = self.labels
+        labels = [labels[i].upper() for i in range(len(labels)) if len(labels[i]) > 0 and i not in (4,5)] # only uppercase text on SA - ignore blank lines and labels on front (not top) of key
+        if len(labels) < 1:
+            return key_img # if blank, exit immediately
+
         scale_factor = 7
         min_size = 16
         line_spacing = 16
@@ -109,7 +114,6 @@ class Key(object):
         else:
             offset = 12 # pixels to shift text upwards to center it in keycap top
             alignment = 'center'
-        labels = [text.upper() for text in self.labels] # only uppercase text on SA
         width_limit = key_img.width - 42 # 60 is combined width of keycap sides in base image
 
         gotham = ImageFont.truetype(self.font_path, int(self.font_size*scale_factor)+min_size)
@@ -119,7 +123,7 @@ class Key(object):
             labels = [line for label in labels for line in textwrap.wrap(label, width=int(width_limit/(gotham.getsize("L")[0])))]
             w = max([gotham.getsize(text)[0] for text in labels])
         h = sum([gotham.getsize(text)[1] for text in labels]) # sum of heights
-        h += line_spacing*(len([text for text in labels if len(text) > 0])-1)
+        h += line_spacing*(len([text for text in labels])-1)
         c = ImageColor.getrgb(self.font_color)
         c = tuple(band + 0x26 for band in c) # Simulates reflectivity
         draw.multiline_text((int((key_img.width-w)/2), int((key_img.height-h)/2 - offset)), '\n'.join(labels), font=gotham, fill=c, spacing=line_spacing, align=alignment)

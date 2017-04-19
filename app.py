@@ -22,7 +22,7 @@ post.add_argument(
 
 def serve_pil_image(pil_img):
     img_io = BytesIO()
-    pil_img.save(img_io, 'JPEG', optimize=True, quality=80)
+    pil_img.save(img_io, 'JPEG', optimize=True, quality=100)
     img_io.seek(0)
     return send_file(img_io, mimetype='image/jpeg')
 
