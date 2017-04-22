@@ -4,6 +4,7 @@ click==6.7
 Flask==0.12.1
 Flask-Cors==3.0.2
 flask-restplus==0.10.1
+Flask-WTF==0.14.2
 gunicorn==19.7.1
 itsdangerous==0.24
 Jinja2==2.9.6
@@ -14,7 +15,9 @@ packaging==16.8
 Pillow==4.1.0
 pyparsing==2.2.0
 python-dateutil==2.6.0
+python-dotenv==0.6.4
 pytz==2017.2
 requests==2.13.0
 six==1.10.0
 Werkzeug==0.12.1
+WTForms==2.1
