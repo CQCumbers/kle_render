@@ -14,7 +14,7 @@ class Key(object):
         self.height = 1.0
         self.width2 = 1.0
         self.height2 = 1.0
-        self.color = '#EEE2D0'
+        self.color = '#EEEEEE'
         self.font_color = '#000000'
         self.labels =[]
         self.align = 4
@@ -33,7 +33,36 @@ class Key(object):
         if self.profile in ('DCS', 'OEM', 'GMK'): # GMK technically not supported by KLE yet
             return Image.open(r'GMK_base.jpg').convert('RGBA').resize((200, 200), Image.ANTIALIAS) # GMK photo from official renders
         else:
-            return Image.open(r'SA_base.jpg').convert('RGBA').resize((200, 200), Image.ANTIALIAS) # SA photo by Madhias (Deskthority)
+            color = ImageColor.getrgb(self.color)
+            bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
+            if (bright > 0xB0):
+                base_num = '1'
+            elif (bright > 0x80):
+               base_num = '2'
+            elif (bright > 0x50):
+                base_num = '3'
+            elif (bright > 0x20):
+                base_num = '4'
+            else:
+                base_num = '5'
+            return Image.open('SA_Base{}.jpg'.format(base_num)).convert('RGBA').resize((200, 200), Image.ANTIALIAS) # SA renders by me
+
+    def base_color(self):
+        if self.profile in ('DCS', 'OEM', 'GMK'): # GMK technically not supported by KLE yet
+            return 0xE0
+        else:
+            color = ImageColor.getrgb(self.color)
+            bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2] # Perceptual gray
+            if (bright > 0xB0):
+                return 0xE0
+            elif (bright > 0x80):
+                return 0xB0
+            elif (bright > 0x50):
+                return 0x80
+            elif (bright > 0x20):
+                return 0x50
+            else:
+                return 0x20
 
     def u(self):
         return self.base_img().width
@@ -60,9 +89,9 @@ class Key(object):
     def tint_key(self, key_img): #a image of the key, and a hex color code string
         color = ImageColor.getrgb(self.color)
         r, g, b, a = key_img.split()
-        r = ImageMath.eval('a - 0xE0 + c', a=r, c=color[0]).convert('L') #base image is a desaturated WFK key, and desaturated WFK is e0e0e0
-        g = ImageMath.eval('a - 0xE0 + c', a=g, c=color[1]).convert('L')
-        b = ImageMath.eval('a - 0xE0 + c', a=b, c=color[2]).convert('L')
+        r = ImageMath.eval('a + c - d', a=r, d=self.base_color(), c=color[0]).convert('L') #base image is a desaturated WFK key, and desaturated WFK is e0e0e0
+        g = ImageMath.eval('a + c - d', a=g, d=self.base_color(), c=color[1]).convert('L')
+        b = ImageMath.eval('a + c - d', a=b, d=self.base_color(), c=color[2]).convert('L')
         return Image.merge('RGBA', (r, g, b, a))
 
     def stretch_key(self): # width and height of key in units
