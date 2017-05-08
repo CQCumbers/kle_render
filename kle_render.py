@@ -1,22 +1,36 @@
 from PIL import Image, ImageColor
+from multiprocessing.dummy import Pool as ThreadPool
 from key import Key
 import copy, html
 
+border = 24
+keyboard = None
+
 def render_keyboard(data):
-    border = 24
+    global keyboard
+    global max_x, max_y
     keys = data['keys']
-    max_x = max([key.rough_location()[2] for key in keys]) + 2*border
-    max_y = max([key.rough_location()[3] for key in keys]) + 2*border
     if len(data['meta']) > 0:
         c = ImageColor.getrgb(data['meta']['backcolor'])
     else:
         c = ImageColor.getrgb('#000000')
-    keyboard = Image.new('RGBA', (max_x, max_y), color=c)
-    for key in keys:
-        key_img = key.render()
-        location = [int(coord+border) for coord in key.location(key_img)]
-        keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
-    return keyboard.resize((int(max_x/3), int(max_y/3)), resample=Image.LANCZOS) #Lanczos is high quality downsampling algorithm
+    keyboard = Image.new('RGBA', (len(keys)*50,len(keys)*50), color=c)
+    max_x = max_y = 0
+
+    pool = ThreadPool(12)
+    pool.map(render_key, keys)
+    pool.close() 
+    pool.join()
+    keyboard = keyboard.crop((0, 0, max_x + border, max_y + border))
+    return keyboard.resize((int(max_x/3), int(max_y/3)), resample=Image.LANCZOS) # Lanczos is high quality downsampling algorithm
+
+def render_key(key):
+    global max_x, max_y
+    key_img = key.render()
+    location = [int(coord+border) for coord in key.location(key_img)]
+    max_x = max(location[2], max_x)
+    max_y = max(location[3], max_y)
+    keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
 
 def deserialise(rows): # where rows is a dictionary version of Keyboard Layout Editor's JSON Output
     # Initialize with defaults

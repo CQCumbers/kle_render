@@ -30,8 +30,17 @@ class Key(object):
         self.decal = False
 
     def base_img(self):
-        if self.profile in ('DCS', 'OEM', 'GMK'): # GMK technically not supported by KLE yet
-            return Image.open(r'GMK_base.jpg').convert('RGBA').resize((200, 200), Image.ANTIALIAS) # GMK photo from official renders
+        if self.profile in ['DCS', 'OEM', 'GMK']: # GMK technically not supported by KLE yet
+            return Image.open(r'GMK_base.jpg').convert('RGBA').resize((200, 200)) # GMK photo from official renders
+        elif self.profile in ['SA SPACE']:
+            print(self.profile)
+            color = ImageColor.getrgb(self.color)
+            bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
+            if (bright > 0x50):
+                base_num = '1'
+            else:
+                base_num = '2'
+            return Image.open('SA_Space_Base{}.jpg'.format(base_num)).convert('RGBA').resize((200, 200)) # SA renders by me
         else:
             color = ImageColor.getrgb(self.color)
             bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
@@ -45,11 +54,18 @@ class Key(object):
                 base_num = '4'
             else:
                 base_num = '5'
-            return Image.open('SA_Base{}.jpg'.format(base_num)).convert('RGBA').resize((200, 200), Image.ANTIALIAS) # SA renders by me
+            return Image.open('SA_Base{}.jpg'.format(base_num)).convert('RGBA').resize((200, 200)) # SA renders by me
 
     def base_color(self):
-        if self.profile in ('DCS', 'OEM', 'GMK'): # GMK technically not supported by KLE yet
+        if self.profile in ['DCS', 'OEM', 'GMK']: # GMK technically not supported by KLE yet
             return 0xE0
+        elif self.profile in ['SA SPACE']:
+            color = ImageColor.getrgb(self.color)
+            bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
+            if (bright > 0x50):
+                return 0xE0
+            else:
+                return 0x50
         else:
             color = ImageColor.getrgb(self.color)
             bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2] # Perceptual gray
