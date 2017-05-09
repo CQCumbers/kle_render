@@ -33,7 +33,6 @@ class Key(object):
         if self.profile in ['DCS', 'OEM', 'GMK']: # GMK technically not supported by KLE yet
             return Image.open(r'GMK_base.jpg').convert('RGBA').resize((200, 200)) # GMK photo from official renders
         elif self.profile in ['SA SPACE']:
-            print(self.profile)
             color = ImageColor.getrgb(self.color)
             bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
             if (bright > 0x50):

@@ -43,7 +43,10 @@
                             {{ form.json.label }}
                             {{ form.json(class="form-control-file") }}
                         </div>
-                        <button type="submit" class="btn btn-success ladda-button" data-style="expand-right"><span class="ladda-label">Render!</span><span class="ladda-spinner"></span></button>
+                        <p id="submitHelpBlock" class="form-text text-muted">
+                        <small>Please be patient - large layouts may take up to 30 seconds to render. Colors may not be accurate</small>
+                        </p>
+                        <button type="submit" class="btn btn-success ladda-button" data-style="expand-right" aria-describedby="submitHelpBlock"><span class="ladda-label">Render!</span><span class="ladda-spinner"></span></button>
                     </form>
                 </div>
             </div>
