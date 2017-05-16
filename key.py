@@ -1,4 +1,6 @@
-from PIL import Image, ImageMath, ImageColor, ImageDraw, ImageFont
+from PIL import Image, ImageMath, ImageColor, ImageCms, ImageDraw, ImageFont
+from colormath.color_objects import LabColor, sRGBColor
+from colormath.color_conversions import convert_color
 import math, textwrap
 
 # Key and deserialise() modified from https://github.com/jackhumbert/kle-image-creator
@@ -102,12 +104,26 @@ class Key(object):
         return (int(x*u), int(y*u), int(x*u + self.width*u), int(y*u + self.height*u))
 
     def tint_key(self, key_img): #a image of the key, and a hex color code string
-        color = ImageColor.getrgb(self.color)
-        r, g, b, a = key_img.split()
-        r = ImageMath.eval('a + c - d', a=r, d=self.base_color(), c=color[0]).convert('L') #base image is a desaturated WFK key, and desaturated WFK is e0e0e0
-        g = ImageMath.eval('a + c - d', a=g, d=self.base_color(), c=color[1]).convert('L')
-        b = ImageMath.eval('a + c - d', a=b, d=self.base_color(), c=color[2]).convert('L')
-        return Image.merge('RGBA', (r, g, b, a))
+        srgb_profile = ImageCms.createProfile('sRGB')
+        lab_profile = ImageCms.createProfile('LAB')
+        rgb2lab_transform = ImageCms.buildTransformFromOpenProfiles(srgb_profile, lab_profile, 'RGB', 'LAB')
+        lab2rgb_transform = ImageCms.buildTransformFromOpenProfiles(lab_profile, srgb_profile, 'LAB', 'RGB')
+
+        alpha = key_img.split()[3]
+        key_img = ImageCms.applyTransform(key_img, rgb2lab_transform)
+        l, a, b = key_img.split()
+        rgb_color = sRGBColor(*ImageColor.getrgb(self.color), is_upscaled=True)
+        lab_color = convert_color(rgb_color, LabColor)
+
+        l1, a1, b1 = int(lab_color.get_value_tuple()[0]*255/100), int(lab_color.get_value_tuple()[1]), int(lab_color.get_value_tuple()[2])
+        l = ImageMath.eval('l2 - l3 + l1', l2=l, l3=self.base_color(), l1=l1).convert('L')
+        a = ImageMath.eval('a2 + a1', a2=a, a1=a1).convert('L')
+        b = ImageMath.eval('b2 + b1', b2=b, b1=b1).convert('L')
+
+        key_img = Image.merge('LAB', (l, a, b))
+        key_img = ImageCms.applyTransform(key_img, lab2rgb_transform)
+        key_img = Image.merge('RGBA', (*key_img.split(), alpha))
+        return key_img
 
     def stretch_key(self): # width and height of key in units
         base_img = self.base_img()
