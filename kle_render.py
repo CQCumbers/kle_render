@@ -17,7 +17,7 @@ def render_keyboard(data):
     keyboard = Image.new('RGBA', (len(keys)*50,len(keys)*50), color=c)
     max_x = max_y = 0
 
-    pool = ThreadPool(12)
+    pool = ThreadPool()
     pool.map(render_key, keys)
     pool.close() 
     pool.join()
@@ -45,7 +45,7 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
                     newKey = copy.copy(current);
                     newKey.width2 = current.width if newKey.width2 == 0.0 else current.width2
                     newKey.height2 = current.height if newKey.height2 == 0.0 else current.height2
-                    newKey.labels = [html.unescape(text) for text in key.replace('<br>', '\n').split('\n')]
+                    newKey.labels = [html.unescape(text) for text in key.replace('<br>', '\n').replace('<br/>', '\n').split('\n')]
                     keys.append(newKey)
 
                     # Set up for the next key

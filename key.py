@@ -3,9 +3,19 @@ from colormath.color_objects import LabColor, sRGBColor
 from colormath.color_conversions import convert_color
 import math, textwrap
 
+srgb_profile = ImageCms.createProfile('sRGB')
+lab_profile = ImageCms.createProfile('LAB')
+rgb2lab_transform = ImageCms.buildTransformFromOpenProfiles(srgb_profile, lab_profile, 'RGB', 'LAB')
+lab2rgb_transform = ImageCms.buildTransformFromOpenProfiles(lab_profile, srgb_profile, 'LAB', 'RGB')
+
 # Key and deserialise() modified from https://github.com/jackhumbert/kle-image-creator
 class Key(object):
     def __init__(self):
+
+        self.u = 200
+        self.base_img = None
+        self.base_color = 0xE0
+
         self.x = 0.0
         self.y = 0.0
         self.x2 =0.0
@@ -35,9 +45,9 @@ class Key(object):
         else:
             return 'NotoRounded.otf'
 
-    def base_img(self):
+    def get_base_img(self):
         if self.profile in ['DCS', 'OEM', 'GMK']: # GMK technically not supported by KLE yet
-            return Image.open(r'GMK_base.jpg').convert('RGBA').resize((200, 200)) # GMK photo from official renders
+            return Image.open(r'GMK_base.jpg').convert('RGBA') # GMK photo from official renders
         elif 'SPACE' in self.profile:
             color = ImageColor.getrgb(self.color)
             bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
@@ -45,7 +55,7 @@ class Key(object):
                 base_num = '1'
             else:
                 base_num = '2'
-            return Image.open('SA_Space_Base{}.jpg'.format(base_num)).convert('RGBA').resize((200, 200)) # SA renders by me
+            return Image.open('SA_Space_Base{}.jpg'.format(base_num)).convert('RGBA') # SA renders by me
         else:
             color = ImageColor.getrgb(self.color)
             bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
@@ -59,9 +69,9 @@ class Key(object):
                 base_num = '4'
             else:
                 base_num = '5'
-            return Image.open('SA_Base{}.jpg'.format(base_num)).convert('RGBA').resize((200, 200)) # SA renders by me
+            return Image.open('SA_Base{}.jpg'.format(base_num)).convert('RGBA') # SA renders by me
 
-    def base_color(self):
+    def get_base_color(self):
         if self.profile in ['DCS', 'OEM', 'GMK']: # GMK technically not supported by KLE yet
             return 0xE0
         elif 'SPACE' in self.profile:
@@ -85,11 +95,8 @@ class Key(object):
             else:
                 return 0x20
 
-    def u(self):
-        return self.base_img().width
-
     def location(self, key_img): # get pixel location of key as (left, upper, right, lower)
-        u = self.u()
+        u = self.u
         x, y = self.x, self.y
         if self.rotation_angle != 0:
             rx, ry = self.rotation_x, self.rotation_y # center about which to rotate key
@@ -102,25 +109,21 @@ class Key(object):
             x, y = rx + x2 - key_img.width/u/2 - left2, ry + y2 - key_img.height/u/2 - top2
         return (int(x*u), int(y*u), int(x*u + key_img.width), int(y*u + key_img.height))
 
-    def rough_location(self): # not accurate - assumes no rotations, but doesn't require rendering
-        u = self.u()
-        x, y = self.x, self.y
-        return (int(x*u), int(y*u), int(x*u + self.width*u), int(y*u + self.height*u))
+    # def rough_location(self): # not accurate - assumes no rotations, but doesn't require rendering
+    #     u = self.u
+    #     x, y = self.x, self.y
+    #     return (int(x*u), int(y*u), int(x*u + self.width*u), int(y*u + self.height*u))
 
     def tint_key(self, key_img): #a image of the key, and a hex color code string
-        srgb_profile = ImageCms.createProfile('sRGB')
-        lab_profile = ImageCms.createProfile('LAB')
-        rgb2lab_transform = ImageCms.buildTransformFromOpenProfiles(srgb_profile, lab_profile, 'RGB', 'LAB')
-        lab2rgb_transform = ImageCms.buildTransformFromOpenProfiles(lab_profile, srgb_profile, 'LAB', 'RGB')
-
         alpha = key_img.split()[3]
         key_img = ImageCms.applyTransform(key_img, rgb2lab_transform)
         l, a, b = key_img.split()
         rgb_color = sRGBColor(*ImageColor.getrgb(self.color), is_upscaled=True)
         lab_color = convert_color(rgb_color, LabColor)
 
-        l1, a1, b1 = int(lab_color.get_value_tuple()[0]*255/100), int(lab_color.get_value_tuple()[1]), int(lab_color.get_value_tuple()[2])
-        l = ImageMath.eval('l2 - l3 + l1', l2=l, l3=self.base_color(), l1=l1).convert('L')
+        l1, a1, b1 = [int(i) for i in lab_color.get_value_tuple()]
+        l1 = int(l1*255/100)
+        l = ImageMath.eval('l2 - l3 + l1', l2=l, l3=self.base_color, l1=l1).convert('L')
         a = ImageMath.eval('a2 + a1', a2=a, a1=a1).convert('L')
         b = ImageMath.eval('b2 + b1', b2=b, b1=b1).convert('L')
 
@@ -130,8 +133,8 @@ class Key(object):
         return key_img
 
     def stretch_key(self): # width and height of key in units
-        base_img = self.base_img()
-        u = self.u()
+        base_img = self.base_img
+        u = self.u
         width, height = int(self.width*u)+1, int(self.height*u)+1 # Width & Height of image representing key
         key_img = Image.new('RGBA', (width, height)) # Lots of +1s to avoid unsightly gaps between keys
         key_img.paste(base_img, (0, 0, u, u))
@@ -160,12 +163,12 @@ class Key(object):
         h = sum([gotham.getsize(text)[1] for text in labels]) # sum of heights
         h += line_spacing*(len([text for text in labels if len(text) > 0])-1)
 
-        key_img = Image.new('RGBA', (w+24, h+108))
+        key_img = Image.new('RGBA', (w+64, h+108))
         return key_img
 
-    def text_key(self, key_img): # convert for use with list of labels
+    def text_key(self, key_img):
         labels = self.labels
-        labels = [labels[i] for i in range(len(labels)) if len(labels[i]) > 0 and i not in (4,5)] # only uppercase text on SA - ignore blank lines and labels on front (not top) of key
+        labels = [labels[i] for i in range(len(labels)) if len(labels[i]) > 0 and '</i>' not in labels[i] and i not in (4,5)] # ignore blank lines, html, and labels on front (not top) of key
         if len(labels) < 1:
             return key_img # if blank, exit immediately
 
@@ -186,7 +189,7 @@ class Key(object):
             width_limit = key_img.width - 55
             alignment = 'left'
         else:
-            labels = [labels[i].upper() for i in range(len(labels))]
+            labels = [labels[i].upper() for i in range(len(labels))] # Only uppercase on SA
 
         gotham = ImageFont.truetype(self.font_path(), int(self.font_size*scale_factor)+min_size)
         draw = ImageDraw.Draw(key_img)
@@ -206,6 +209,9 @@ class Key(object):
         return key_img 
 
     def render(self):
+        self.base_img = self.get_base_img()
+        self.base_color = self.get_base_color()
+
         if self.decal:
             key_img = self.decal_key()
         else:
