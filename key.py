@@ -48,7 +48,7 @@ class Key(object):
 
     def get_base_img(self):
         if self.profile in ['DCS', 'OEM', 'GMK']: # GMK technically not supported by KLE yet
-            return Image.open(r'GMK_base.jpg').convert('RGBA') # GMK photo from official renders
+            return Image.open(r'GMK_Base.jpg').convert('RGBA') # GMK photo from official renders
         elif 'SPACE' in self.profile:
             color = ImageColor.getrgb(self.color)
             bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
@@ -109,11 +109,6 @@ class Key(object):
 
             x, y = rx + x2 - key_img.width/u/2 - left2, ry + y2 - key_img.height/u/2 - top2
         return (int(x*u), int(y*u), int(x*u + key_img.width), int(y*u + key_img.height))
-
-    # def rough_location(self): # not accurate - assumes no rotations, but doesn't require rendering
-    #     u = self.u
-    #     x, y = self.x, self.y
-    #     return (int(x*u), int(y*u), int(x*u + self.width*u), int(y*u + self.height*u))
 
     def tint_key(self, key_img): #a image of the key, and a hex color code string
         alpha = key_img.split()[3]
