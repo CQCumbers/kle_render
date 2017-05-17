@@ -26,7 +26,8 @@ post.add_argument(
 
 def serve_pil_image(pil_img):
     img_io = BytesIO()
-    pil_img.save(img_io, 'JPEG', optimize=True)
+    #pil_img.save(img_io, 'JPEG', optimize=True)
+    pil_img.save(img_io, 'PNG')
     img_io.seek(0)
     return send_file(img_io, mimetype='image/jpeg')
 
@@ -42,7 +43,7 @@ class FromGist(Resource):
 @api.expect(post)
 class FromJSON(Resource):
     def post(self):
-        data = kle_render.deserialise(api.payload)
+        data = kle_render.deserialise(json.loads(api.payload))
         img = kle_render.render_keyboard(data)
         return serve_pil_image(img)
 

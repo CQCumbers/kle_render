@@ -10,10 +10,11 @@ lab2rgb_transform = ImageCms.buildTransformFromOpenProfiles(lab_profile, srgb_pr
 
 # Key and deserialise() modified from https://github.com/jackhumbert/kle-image-creator
 class Key(object):
+    __slots__ = ['u', 'base_color', 'x', 'y', 'x2', 'y2', 'width', 'height', 'width2', 'height2', 'color', 'font_color', 'labels', 'align', 'font_size', 'font_size2', 'rotation_angle', 'rotation_x', 'rotation_y', 'profile', 'nub', 'ghost', 'stepped', 'decal']
+
     def __init__(self):
 
         self.u = 200
-        self.base_img = None
         self.base_color = 0xE0
 
         self.x = 0.0
@@ -28,8 +29,8 @@ class Key(object):
         self.font_color = '#000000'
         self.labels =[]
         self.align = 4
-        self.font_size = 8.0
-        self.font_size2 = 8.0
+        self.font_size = 3.0
+        self.font_size2 = 3.0
         self.rotation_angle = 0.0
         self.rotation_x = 0.0
         self.rotation_y = 0.0
@@ -133,7 +134,7 @@ class Key(object):
         return key_img
 
     def stretch_key(self): # width and height of key in units
-        base_img = self.base_img
+        base_img = self.get_base_img()
         u = self.u
         width, height = int(self.width*u)+1, int(self.height*u)+1 # Width & Height of image representing key
         key_img = Image.new('RGBA', (width, height)) # Lots of +1s to avoid unsightly gaps between keys
@@ -184,8 +185,8 @@ class Key(object):
         width_limit = key_img.width - 42 # 42 is combined width of keycap sides in base image
 
         if self.profile in ['DCS', 'OEM', 'GMK']:
-            scale_factor = 4
-            min_size = 8
+            scale_factor = 9
+            min_size = 12
             width_limit = key_img.width - 55
             alignment = 'left'
         else:
@@ -203,13 +204,12 @@ class Key(object):
         c = tuple(band + 0x26 for band in c) # Simulates reflectivity
 
         if self.profile in ['DCS', 'OEM', 'GMK']:
-            draw.multiline_text((int(45), int(30)), '\n'.join(labels), font=gotham, fill=c, spacing=line_spacing, align=alignment)
+            draw.multiline_text((45, 30), '\n'.join(labels), font=gotham, fill=c, spacing=line_spacing, align=alignment)
         else:
             draw.multiline_text((int((key_img.width-w)/2), int((key_img.height-h)/2 - offset)), '\n'.join(labels), font=gotham, fill=c, spacing=line_spacing, align=alignment)
         return key_img 
 
     def render(self):
-        self.base_img = self.get_base_img()
         self.base_color = self.get_base_color()
 
         if self.decal:
@@ -218,5 +218,7 @@ class Key(object):
             key_img = self.stretch_key()
             key_img = self.tint_key(key_img)
         key_img = self.text_key(key_img)
-        key_img = key_img.rotate(-self.rotation_angle, resample=Image.BICUBIC, expand=1)
+        if self.rotation_angle != 0:
+            key_img = key_img.resize(tuple(i+2 for i in key_img.size))
+            key_img = key_img.rotate(-self.rotation_angle, resample=Image.BICUBIC, expand=1)
         return key_img

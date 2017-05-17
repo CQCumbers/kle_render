@@ -5,4 +5,4 @@ This project uses Pillow (Python Image Library), Flask, and Flask-RESTPlus to se
 
 Check it out at [kle-render.herokuapp.com](https://kle-render.herokuapp.com/)
 
-![Sample Render](https://raw.githubusercontent.com/CQCumbers/kle_render/master/render_output.jpg)
+![Sample Render](https://raw.githubusercontent.com/CQCumbers/kle_render/master/render_output.png)

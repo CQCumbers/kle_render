@@ -5,6 +5,7 @@ import copy, html
 
 border = 24
 keyboard = None
+scale = 3
 
 def render_keyboard(data):
     global keyboard
@@ -14,22 +15,23 @@ def render_keyboard(data):
         c = ImageColor.getrgb(data['meta']['backcolor'])
     else:
         c = ImageColor.getrgb('#000000')
-    keyboard = Image.new('RGBA', (len(keys)*50,len(keys)*50), color=c)
+    keyboard = Image.new('RGBA', (len(keys)*int(round(48/scale)),len(keys)*int(round(48/scale))), color=c)
     max_x = max_y = 0
 
     pool = ThreadPool()
     pool.map(render_key, keys)
     pool.close() 
     pool.join()
-    keyboard = keyboard.crop((0, 0, max_x + border, max_y + border))
-    return keyboard.resize((int(max_x/3), int(max_y/3)), resample=Image.LANCZOS) # Lanczos is high quality downsampling algorithm
+    keyboard = keyboard.crop((0, 0, max_x + int(round(border/scale)), max_y + int(round(border/scale))))
+    return keyboard
 
 def render_key(key):
     global max_x, max_y
     key_img = key.render()
-    location = [int(coord+border) for coord in key.location(key_img)]
+    location = [int(round((coord+border)/scale)) for coord in key.location(key_img)]
     max_x = max(location[2], max_x)
     max_y = max(location[3], max_y)
+    key_img = key_img.resize(tuple(int(round(i/scale)) for i in key_img.size), resample=Image.LANCZOS) # Lanczos is high quality downsampling algorithm
     keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
 
 def deserialise(rows): # where rows is a dictionary version of Keyboard Layout Editor's JSON Output
