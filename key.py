@@ -120,8 +120,8 @@ class Key(object):
         l1, a1, b1 = [int(i) for i in lab_color.get_value_tuple()]
         l1 = int(l1*255/100)
         l = ImageMath.eval('l2 - l3 + l1', l2=l, l3=self.base_color, l1=l1).convert('L')
-        a = ImageMath.eval('a2 + a1 - l2 * a1/1024', a2=a, a1=a1, l2=l).convert('L') # desaturate highlights (blender.stackexchange.com/questions/46825/)
-        b = ImageMath.eval('b2 + b1 - l2 * b1/1024', b2=b, b1=b1, l2=l).convert('L') # I think it looks better
+        a = ImageMath.eval('a2 + a1', a2=a, a1=a1, l2=l).convert('L')
+        b = ImageMath.eval('b2 + b1', b2=b, b1=b1, l2=l).convert('L')
 
         key_img = Image.merge('LAB', (l, a, b))
         key_img = ImageCms.applyTransform(key_img, lab2rgb_transform)
