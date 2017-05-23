@@ -15,7 +15,7 @@ def render_keyboard(data):
         c = ImageColor.getrgb(data['meta']['backcolor'])
     else:
         c = ImageColor.getrgb('#000000')
-    keyboard = Image.new('RGBA', (len(keys)*int(round(48/scale)),len(keys)*int(round(48/scale))), color=c)
+    keyboard = Image.new('RGBA', (len(keys)*int(round(60/scale)),len(keys)*int(round(60/scale))), color=c)
     max_x = max_y = 0
 
     pool = ThreadPool()
