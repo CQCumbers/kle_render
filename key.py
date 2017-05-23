@@ -8,6 +8,8 @@ lab_profile = ImageCms.createProfile('LAB')
 rgb2lab_transform = ImageCms.buildTransformFromOpenProfiles(srgb_profile, lab_profile, 'RGB', 'LAB')
 lab2rgb_transform = ImageCms.buildTransformFromOpenProfiles(lab_profile, srgb_profile, 'LAB', 'RGB')
 
+GMK_LABELS = ('GMK', 'DCS', 'OEM')
+
 # Key and deserialise() modified from https://github.com/jackhumbert/kle-image-creator
 class Key(object):
     __slots__ = ['u', 'base_color', 'x', 'y', 'x2', 'y2', 'width', 'height', 'width2', 'height2', 'color', 'font_color', 'labels', 'align', 'font_size', 'font_size2', 'rotation_angle', 'rotation_x', 'rotation_y', 'profile', 'nub', 'ghost', 'stepped', 'decal']
@@ -164,45 +166,87 @@ class Key(object):
 
     def text_key(self, key_img):
         labels = self.labels
-        labels = [labels[i] for i in range(len(labels)) if len(labels[i]) > 0 and '</i>' not in labels[i] and i not in (4,5)] # ignore blank lines, html, and labels on front (not top) of key
-        if len(labels) < 1:
+        #labels = [labels[i] for i in range(len(labels)) if len(labels[i]) > 0 and '</i>' not in labels[i] and i not in (4,5)] # ignore blank lines, html, and labels on front (not top) of key
+        if len(labels) <= 0:
             return key_img # if blank, exit immediately
-
-        scale_factor = 7
-        min_size = 16
-        line_spacing = 16
-        if self.decal:
-            offset = 0
-            alignment = 'left'
         else:
-            offset = 12 # pixels to shift text upwards to center it in keycap top
-            alignment = 'center'
-        width_limit = key_img.width - 42 # 42 is combined width of keycap sides in base image
+            if self.decal:
+                offset = 0  # pixels to shift text upwards to center it in keycap top
+                scale_factor = 7 # multiply this by the legend size and add to min_size to get font size for that legend
+                min_size = 16
+                line_spacing = 16 # space between lines (only matters for <= 2 labels)
+                width_limit = key_img.width # maximum line width in pixels before automatic line break (Only matters for 1 label)
+            elif self.profile.startswith(GMK_LABELS):
+                offset = 12
+                scale_factor = 9
+                min_size = 12
+                line_spacing = 12
+                width_limit = key_img.width - 55
+            else:
+                offset = 12
+                scale_factor = 7
+                min_size = 16
+                line_spacing = 16
+                width_limit = key_img.width - 42
+                labels = [labels[i].upper() for i in range(len(labels))] # Only uppercase legends on SA keycaps
 
-        if self.profile in ['DCS', 'OEM', 'GMK']:
-            scale_factor = 9
-            min_size = 12
-            width_limit = key_img.width - 55
-            alignment = 'left'
-        else:
-            labels = [labels[i].upper() for i in range(len(labels))] # Only uppercase on SA
+            font = ImageFont.truetype(self.font_path(), int(self.font_size*scale_factor)+min_size)
+            draw = ImageDraw.Draw(key_img)
+            c = ImageColor.getrgb(self.font_color)
+            c = tuple(band + 0x26 for band in c) # Simulates reflectivity 
 
-        gotham = ImageFont.truetype(self.font_path(), int(self.font_size*scale_factor)+min_size)
-        draw = ImageDraw.Draw(key_img)
-        w = max([gotham.getsize(text)[0] for text in labels]) # max of label widths
-        if w > width_limit and not self.decal:
-            labels = [line for label in labels for line in textwrap.wrap(label, width=int(width_limit/(gotham.getsize("L")[0])))]
-            w = max([gotham.getsize(text)[0] for text in labels])
-        h = sum([gotham.getsize(text)[1] for text in labels]) # sum of heights
-        h += line_spacing*(len([text for text in labels])-1)
-        c = ImageColor.getrgb(self.font_color)
-        c = tuple(band + 0x26 for band in c) # Simulates reflectivity
+            if len(labels) <= 2 and labels[0] != '': # If 2 or fewer labels, center accurately depending on profile
+                if self.profile.startswith(GMK_LABELS):
+                    draw.multiline_text((45, 45-offset), '\n'.join(labels), font=font, fill=c, spacing=line_spacing)
+                else:
+                    w = max([font.getsize(text)[0] for text in labels]) # max of label widths
+                    if len(labels) == 1 and w > width_limit and not self.decal: # wrap text only for single labels
+                        labels = [line for label in labels for line in textwrap.wrap(label, width=int(width_limit/(font.getsize('L')[0])))]
+                        w = max([font.getsize(text)[0] for text in labels])
+                    h = sum([font.getsize(text)[1] for text in labels]) # sum of heights
+                    h += line_spacing*(len([text for text in labels])-1)
+                    draw.multiline_text((int((key_img.width-w)/2), int((key_img.height-h)/2 - offset)), '\n'.join(labels), font=font, fill=c, spacing=line_spacing, align='center')
+            else: # Otherwise copy keyboard layout editor legend positions
+                for i in range(len(labels)):
+                    text = labels[i]
+                    if i == 0:
+                        draw.text((45, 45-offset), text, font=font, fill=c)
+                    elif i == 1:
+                        h = font.getsize(text)[1]
+                        draw.text((45, key_img.height-45-h-offset), text, font=font, fill=c)
+                    elif i == 2:
+                        w = font.getsize(text)[0]
+                        draw.text((key_img.width-45-w, 45-offset), text, font=font, fill=c)
+                    elif i == 3:
+                        w = font.getsize(text)[0]
+                        h = font.getsize(text)[1]
+                        draw.text((key_img.width-45-w, key_img.height-45-h-offset), text, font=font, fill=c)
+                    elif i == 6:
+                        h = font.getsize(text)[1]
+                        draw.text((45, (key_img.height-h)/2-offset), text, font=font, fill=c)
+                    elif i == 7:
+                        w = font.getsize(text)[0]
+                        h = font.getsize(text)[1]
+                        draw.text((key_img.width-45-w, (key_img.height-h)/2-offset), text, font=font, fill=c)
+                    elif i == 8:
+                        w = font.getsize(text)[0]
+                        draw.text(((key_img.width-w)/2, 45-offset), text, font=font, fill=c)
+                    elif i == 9:
+                        w = font.getsize(text)[0]
+                        h = font.getsize(text)[1]
+                        draw.text(((key_img.width-w)/2, (key_img.height-h)/2-offset), text, font=font, fill=c)
+                    elif i == 10:
+                        w = font.getsize(text)[0]
+                        h = font.getsize(text)[1]
+                        draw.text(((key_img.width-w)/2, key_img.height-45-h-offset), text, font=font, fill=c)
+                    # elif i == 9:
+                    #     draw.text()
+                    # elif i == 10:
+                    #     draw.text()
+                    # elif i = 11:
+                    #     draw.text()
 
-        if self.profile in ['DCS', 'OEM', 'GMK']:
-            draw.multiline_text((45, 30), '\n'.join(labels), font=gotham, fill=c, spacing=line_spacing, align=alignment)
-        else:
-            draw.multiline_text((int((key_img.width-w)/2), int((key_img.height-h)/2 - offset)), '\n'.join(labels), font=gotham, fill=c, spacing=line_spacing, align=alignment)
-        return key_img 
+            return key_img 
 
     def render(self):
         self.base_color = self.get_base_color()

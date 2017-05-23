@@ -15,7 +15,8 @@ def render_keyboard(data):
         c = ImageColor.getrgb(data['meta']['backcolor'])
     else:
         c = ImageColor.getrgb('#000000')
-    keyboard = Image.new('RGBA', (len(keys)*int(round(60/scale)),len(keys)*int(round(60/scale))), color=c)
+    s = (160 * 0.97**len(keys) + 40 + 2*border)*len(keys)
+    keyboard = Image.new('RGBA', (int(round(s/scale)),int(round(s/scale))), color=c)
     max_x = max_y = 0
 
     pool = ThreadPool()
@@ -34,6 +35,9 @@ def render_key(key):
     key_img = key_img.resize(tuple(int(round(i/scale)) for i in key_img.size), resample=Image.LANCZOS) # Lanczos is high quality downsampling algorithm
     keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
 
+def html_to_unicode(html): # unescaped html input
+    return html
+
 def deserialise(rows): # where rows is a dictionary version of Keyboard Layout Editor's JSON Output
     # Initialize with defaults
     current = Key()
@@ -47,7 +51,7 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
                     newKey = copy.copy(current);
                     newKey.width2 = current.width if newKey.width2 == 0.0 else current.width2
                     newKey.height2 = current.height if newKey.height2 == 0.0 else current.height2
-                    newKey.labels = [html.unescape(text) for text in key.replace('<br>', '\n').replace('<br/>', '\n').split('\n')]
+                    newKey.labels = [html_to_unicode(text) for text in html.unescape(key).split('\n')]
                     keys.append(newKey)
 
                     # Set up for the next key
@@ -74,7 +78,9 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
                     if 'c' in key:
                         current.color = key['c'].replace(';', '')
                     if 't' in key:
-                        current.font_color = key['t'].replace(';', '')
+                        current.font_color = key['t'].replace(';', '').replace('\n', '')
+                        if '#' in current.font_color[1:]: # hack to prevent multiple font colors from causing crash
+                            current.font_color = current.font_color[:4]
                     if 'x' in key:
                         current.x += float(key['x'])
                     if 'y' in key:
@@ -101,7 +107,7 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
                         current.decal = key['d']
             # End of the row
             current.y += 1.0;
-        elif 'backcolor' in row:
+        elif 'backcolor' in row and len(row['backcolor']) > 0:
             meta['backcolor'] = row['backcolor'].replace(';', '')
         current.x = 0 #current.rotation_x
     return {'meta': meta, 'keys': keys}
