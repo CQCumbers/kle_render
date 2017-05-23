@@ -30,7 +30,7 @@ class Key(object):
         self.color = '#EEEEEE'
         self.font_color = '#000000'
         self.labels =[]
-        self.align = 4
+        self.align = 0
         self.font_size = 3.0
         self.font_size2 = 3.0
         self.rotation_angle = 0.0
@@ -207,44 +207,48 @@ class Key(object):
                     h += line_spacing*(len([text for text in labels])-1)
                     draw.multiline_text((int((key_img.width-w)/2), int((key_img.height-h)/2 - offset)), '\n'.join(labels), font=font, fill=c, spacing=line_spacing, align='center')
             else: # Otherwise copy keyboard layout editor legend positions
+                alignments = [[1, 9, 3, 7, 10, 8, 2, 11, 4, 5, 12, 6],
+                            [-1, 1, -1, -1, 7, -1, -1, 2, -1, 5, 12, 6],
+                            [-1, -1, -1, 1, 9, 3, -1, -1, -1, 5, 12, 6],
+                            [-1, -1, -1, -1, 1, -1, -1, -1, -1, 5, 12, 6],
+                            [1, 9, 3, 7, 10, 8, 2, 11, 4, -1, 5, -1],
+                            [-1, 1, -1, -1, 7, -1, -1, 2, -1, -1, 5, -1],
+                            [-1, -1, -1, 1, 9, 3, -1, -1, -1, -1, 5, -1],
+                            [-1, -1, -1, -1, 1, -1, -1, -1, -1, -1, 5, -1]]
+                align = [i-1 for i in alignments[self.align]]
+
                 for i in range(len(labels)):
                     text = labels[i]
-                    if i == 0:
+                    if i == align[0]:
                         draw.text((45, 45-offset), text, font=font, fill=c)
-                    elif i == 1:
+                    elif i == align[6]:
                         h = font.getsize(text)[1]
                         draw.text((45, key_img.height-45-h-offset), text, font=font, fill=c)
-                    elif i == 2:
+                    elif i == align[2]:
                         w = font.getsize(text)[0]
                         draw.text((key_img.width-45-w, 45-offset), text, font=font, fill=c)
-                    elif i == 3:
+                    elif i == align[8]:
                         w = font.getsize(text)[0]
                         h = font.getsize(text)[1]
                         draw.text((key_img.width-45-w, key_img.height-45-h-offset), text, font=font, fill=c)
-                    elif i == 6:
+                    elif i == align[3]:
                         h = font.getsize(text)[1]
                         draw.text((45, (key_img.height-h)/2-offset), text, font=font, fill=c)
-                    elif i == 7:
+                    elif i == align[5]:
                         w = font.getsize(text)[0]
                         h = font.getsize(text)[1]
                         draw.text((key_img.width-45-w, (key_img.height-h)/2-offset), text, font=font, fill=c)
-                    elif i == 8:
+                    elif i == align[1]:
                         w = font.getsize(text)[0]
                         draw.text(((key_img.width-w)/2, 45-offset), text, font=font, fill=c)
-                    elif i == 9:
+                    elif i == align[4]:
                         w = font.getsize(text)[0]
                         h = font.getsize(text)[1]
                         draw.text(((key_img.width-w)/2, (key_img.height-h)/2-offset), text, font=font, fill=c)
-                    elif i == 10:
+                    elif i == align[7]:
                         w = font.getsize(text)[0]
                         h = font.getsize(text)[1]
                         draw.text(((key_img.width-w)/2, key_img.height-45-h-offset), text, font=font, fill=c)
-                    # elif i == 9:
-                    #     draw.text()
-                    # elif i == 10:
-                    #     draw.text()
-                    # elif i = 11:
-                    #     draw.text()
 
             return key_img 
 
