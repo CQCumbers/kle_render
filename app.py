@@ -35,7 +35,10 @@ def serve_pil_image(pil_img):
 @api.doc(params={'id': 'Copy from keyboard-layout-editor.com/#/gists/<id>'})
 class FromGist(Resource):
     def get(self, id):
-        data = kle_render.deserialise(json.loads([value for key, value in requests.get('http://api.github.com/gists/%s' % id).json()['files'].items() if key.endswith('.kbd.json')][0]['content']))
+        try:
+            data = kle_render.deserialise(json.loads([value for key, value in requests.get('http://api.github.com/gists/%s' % id).json()['files'].items() if key.endswith('.kbd.json')][0]['content']))
+        except KeyError:
+            print(requests.get('http://api.github.com/gists/%s' % id).json())
         img = kle_render.render_keyboard(data)
         return serve_pil_image(img)
 
