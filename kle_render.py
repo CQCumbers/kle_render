@@ -38,7 +38,7 @@ def render_keyboard(data):
 def render_key(key):
     global max_x, max_y
     key_img = key.render()
-    location = [int(round((coord+border)/scale)) for coord in key.location(key_img)]
+    location = [int((coord+border)/scale) for coord in key.location(key_img)]
     max_x = max(location[2], max_x)
     max_y = max(location[3], max_y)
     key_img = key_img.resize(tuple(int(round(i/scale)) for i in key_img.size), resample=Image.LANCZOS) # Lanczos is high quality downsampling algorithm
