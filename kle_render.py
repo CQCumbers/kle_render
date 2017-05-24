@@ -19,7 +19,7 @@ def render_keyboard(data):
     keyboard = Image.new('RGBA', (int(round(s/scale)),int(round(s/scale))), color=c)
     max_x = max_y = 0
 
-    pool = ThreadPool()
+    pool = ThreadPool(16) # hopefully avoid running out of threads on heroku
     pool.map(render_key, keys)
     pool.close() 
     pool.join()
@@ -50,7 +50,6 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
     current = Key()
     meta = { 'backcolor': '#eeeeee' }
     keys = []
-    cluster = { 'x': 0.0, 'y': 0.0 }
     for row in rows:
         if isinstance(row, list):
             for key in row:
@@ -69,11 +68,12 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
                 else:
                     if 'r' in key:
                         current.rotation_angle = key['r']
-                        current.y = 0
                     if 'rx' in key:
-                        current.rotation_x = cluster['x'] = key['rx']
+                        current.rotation_x = key['rx']
+                        current.x = 0
                     if 'ry' in key:
-                        current.rotation_y = cluster['y'] = key['ry']
+                        current.rotation_y = key['ry']
+                        current.y = 0
                     if 'a' in key:
                         current.align = int(key['a'])
                     if 'f' in key:
