@@ -1,7 +1,7 @@
 from PIL import Image, ImageColor
 from multiprocessing.dummy import Pool as ThreadPool
 from key import Key
-import copy, html
+import copy, html, re
 
 border = 24
 keyboard = None
@@ -36,7 +36,13 @@ def render_key(key):
     keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
 
 def html_to_unicode(html): # unescaped html input
-    return html
+    cleanr = re.compile(r'<.*?>')
+    with open('fa_to_unicode.txt','r') as inf:
+        d = eval(inf.read())
+    pattern = re.compile('|'.join(("<i class='fa {}'></i>".format(icon) for icon in d.keys()))) # I know, re's and html...
+
+    result = pattern.sub(lambda x: chr(int(d[x.group()[13:-6]], 16)), html)
+    return re.sub(cleanr, '', result)
 
 def deserialise(rows): # where rows is a dictionary version of Keyboard Layout Editor's JSON Output
     # Initialize with defaults
