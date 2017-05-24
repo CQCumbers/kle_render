@@ -70,10 +70,10 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
                         current.rotation_angle = key['r']
                     if 'rx' in key:
                         current.rotation_x = key['rx']
-                        current.x = 0
+                        current.x = current.y = 0
                     if 'ry' in key:
                         current.rotation_y = key['ry']
-                        current.y = 0
+                        current.y = current.y = 0
                     if 'a' in key:
                         current.align = int(key['a'])
                     if 'f' in key:
