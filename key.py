@@ -196,6 +196,7 @@ class Key(object):
             c = tuple(band + 0x26 for band in c) # Simulates reflectivity 
 
             if len(labels) <= 2 and labels[0] != '': # If 2 or fewer labels, center accurately depending on profile
+                labels = [text for label in labels for text in label.split('\n')]
                 if self.profile.startswith(GMK_LABELS) or self.decal:
                     draw.multiline_text((45, 45-offset), '\n'.join(labels), font=font, fill=c, spacing=line_spacing)
                 else:
@@ -222,8 +223,8 @@ class Key(object):
                     if i == align[0]:
                         draw.text((45, 45-offset), text, font=font, fill=c)
                     elif i == align[6]:
-                        h = font.getsize(text)[1]
-                        draw.text((45, key_img.height-45-h-offset), text, font=font, fill=c)
+                       h = font.getsize(text)[1]
+                       draw.text((45, key_img.height-45-h-offset), text, font=font, fill=c)
                     elif i == align[2]:
                         w = font.getsize(text)[0]
                         draw.text((key_img.width-45-w, 45-offset), text, font=font, fill=c)

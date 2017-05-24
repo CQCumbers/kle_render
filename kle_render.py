@@ -20,6 +20,8 @@ def render_keyboard(data):
         scale = 1
     elif len(keys) < 200:
         scale = 3
+    elif len(keys) < 540:
+        scale = 4
     else:
         scale = 5
     s = (160 * 0.97**len(keys) + 40 + 2*border)*len(keys)
