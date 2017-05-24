@@ -101,7 +101,7 @@ class Key(object):
     def location(self, key_img): # get pixel location of key as (left, upper, right, lower)
         u = self.u
         x, y = self.x, self.y
-        if self.rotation_angle != 0:
+        if self.rotation_angle != 0 or self.rotation_x != 0 or self.rotation_y != 0:
             rx, ry = self.rotation_x, self.rotation_y # center about which to rotate key
             a = self.rotation_angle * math.pi / 180
             x2, y2 = x*math.cos(a) - y*math.sin(a), y*math.cos(a) + x*math.sin(a)
