@@ -42,6 +42,7 @@ def html_to_unicode(html): # unescaped html input
     pattern = re.compile('|'.join(("<i class='fa {}'></i>".format(icon) for icon in d.keys()))) # I know, re's and html...
 
     result = pattern.sub(lambda x: chr(int(d[x.group()[13:-6]], 16)), html)
+    result = result.replace('<br>', '\n').replace('<br/>', '\n')
     return re.sub(cleanr, '', result)
 
 def deserialise(rows): # where rows is a dictionary version of Keyboard Layout Editor's JSON Output

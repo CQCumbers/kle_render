@@ -159,7 +159,7 @@ class Key(object):
         gotham = ImageFont.truetype(self.font_path(), int(self.font_size*scale_factor)+min_size)
         w = max([gotham.getsize(text)[0] for text in labels]) # max of widths
         h = sum([gotham.getsize(text)[1] for text in labels]) # sum of heights
-        h += line_spacing*(len([text for text in labels if len(text) > 0])-1)
+        h += line_spacing*(len([text for text in labels if len(text) > 0]))
 
         key_img = Image.new('RGBA', (w+64, h+108))
         return key_img
@@ -196,7 +196,7 @@ class Key(object):
             c = tuple(band + 0x26 for band in c) # Simulates reflectivity 
 
             if len(labels) <= 2 and labels[0] != '': # If 2 or fewer labels, center accurately depending on profile
-                if self.profile.startswith(GMK_LABELS):
+                if self.profile.startswith(GMK_LABELS) or self.decal:
                     draw.multiline_text((45, 45-offset), '\n'.join(labels), font=font, fill=c, spacing=line_spacing)
                 else:
                     w = max([font.getsize(text)[0] for text in labels]) # max of label widths
