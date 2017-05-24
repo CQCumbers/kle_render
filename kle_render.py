@@ -10,11 +10,18 @@ scale = 3
 def render_keyboard(data):
     global keyboard
     global max_x, max_y
+    global scale
     keys = data['keys']
     if len(data['meta']) > 0:
         c = ImageColor.getrgb(data['meta']['backcolor'])
     else:
         c = ImageColor.getrgb('#000000')
+    if len(keys) < 10:
+        scale = 1
+    elif len(keys) < 200:
+        scale = 3
+    else:
+        scale = 5
     s = (160 * 0.97**len(keys) + 40 + 2*border)*len(keys)
     keyboard = Image.new('RGBA', (int(round(s/scale)),int(round(s/scale))), color=c)
     max_x = max_y = 0
