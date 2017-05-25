@@ -1,7 +1,7 @@
 from PIL import Image, ImageColor
 from multiprocessing.dummy import Pool as ThreadPool
 from key import Key
-import copy, html, re
+import copy, html, re, json
 
 border = 24
 keyboard = None
@@ -46,11 +46,15 @@ def render_key(key):
 
 def html_to_unicode(html): # unescaped html input
     cleanr = re.compile(r'<.*?>')
-    with open('fa_to_unicode.txt','r') as inf:
-        d = eval(inf.read())
+    with open('fa2unicode.json') as data1:
+        d = json.load(data1)
+    with open('kbd-webfont2unicode.json') as data2:
+        d2 = json.load(data2)
     pattern = re.compile('|'.join(("<i class='fa {}'></i>".format(icon) for icon in d.keys()))) # I know, re's and html...
+    pattern2 = re.compile('|'.join(("<i class='kb kb-{}'></i>".format(icon) for icon in d2.keys())))
 
     result = pattern.sub(lambda x: chr(int(d[x.group()[13:-6]], 16)), html)
+    result = pattern2.sub(lambda x: chr(int(d2[x.group()[16:-6]], 16)), result)
     result = result.replace('<br>', '\n').replace('<br/>', '\n')
     return re.sub(cleanr, '', result)
 

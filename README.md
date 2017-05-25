@@ -4,7 +4,6 @@ Get prettier images of Keyboard Layout Editor designs
 This project uses Pillow (Python Image Library), Flask, and Flask-RESTPlus to serve up 'renders' of keyboards from their keyboard layout editor JSON, by stretching, tinting, and tiling base images of a 1u keycap.
 
 ### TODO:
-- Convert Character Picker glyphs to Unicode
 - Add support for front-printed legends
 - Add support for L-shaped keys
 - Add support for stepped keys
