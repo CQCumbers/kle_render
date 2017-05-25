@@ -63,6 +63,8 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
     current = Key()
     meta = { 'backcolor': '#eeeeee' }
     keys = []
+    color_format = re.compile(r'#[a-fA-F0-9]{3}(?:[a-fA-F0-9]{3})?$')
+
     for row in rows:
         if isinstance(row, list):
             for key in row:
@@ -98,9 +100,11 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
                     if 'c' in key:
                         current.color = key['c'].replace(';', '')
                     if 't' in key:
-                        current.font_color = key['t'].replace(';', '').replace('\n', '')
-                        if '#' in current.font_color[1:]: # hack to prevent multiple font colors from causing crash
-                            current.font_color = current.font_color[:4]
+                        f_color = key['t'].replace(';', '').replace('\n', '')
+                        if '#' in f_color[1:]: # hack to prevent multiple font colors from causing crash
+                            f_color = f_color[:4]
+                        if color_format.match(f_color): # more gracefully handle invalid colors
+                            current.font_color = f_color
                     if 'x' in key:
                         current.x += float(key['x'])
                     if 'y' in key:
