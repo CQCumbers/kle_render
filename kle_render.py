@@ -25,6 +25,7 @@ def render_keyboard(data):
     else:
         scale = 5
     s = (160 * 0.97**len(keys) + 40 + 2*border)*len(keys)
+    #s = len(keys) * 300 # DEBUG
     keyboard = Image.new('RGBA', (int(round(s/scale)),int(round(s/scale))), color=c)
     max_x = max_y = 0
 
@@ -41,7 +42,7 @@ def render_key(key):
     location = [int((coord+border)/scale) for coord in key.location(key_img)]
     max_x = max(location[2], max_x)
     max_y = max(location[3], max_y)
-    key_img = key_img.resize(tuple(int(round(i/scale)) for i in key_img.size), resample=Image.LANCZOS) # Lanczos is high quality downsampling algorithm
+    key_img = key_img.resize(tuple([int(i/scale)+1 for i in key_img.size]), resample=Image.LANCZOS) # Lanczos is high quality downsampling algorithm
     keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
 
 def html_to_unicode(html): # unescaped html input
@@ -70,8 +71,6 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
             for key in row:
                 if isinstance(key, str):
                     newKey = copy.copy(current);
-                    newKey.width2 = current.width if newKey.width2 == 0.0 else current.width2
-                    newKey.height2 = current.height if newKey.height2 == 0.0 else current.height2
                     newKey.labels = [html_to_unicode(text) for text in html.unescape(key).split('\n')]
                     keys.append(newKey)
 
@@ -119,8 +118,11 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
                         current.y2 = float(key['y2'])
                     if 'w2' in key:
                         current.width2 = float(key['w2'])
+                        current.height2 = current.height
                     if 'h2' in key:
                         current.height2 = float(key['h2'])
+                        if current.width2 == 0.0:
+                            current.width2 = current.width
                     if 'n' in key:
                         current.nub = key['n']
                     if 'l' in key:

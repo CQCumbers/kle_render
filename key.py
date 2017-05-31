@@ -10,7 +10,6 @@ lab2rgb_transform = ImageCms.buildTransformFromOpenProfiles(lab_profile, srgb_pr
 
 GMK_LABELS = ('GMK', 'DCS', 'OEM')
 
-# Key and deserialise() modified from https://github.com/jackhumbert/kle-image-creator
 class Key(object):
     __slots__ = ['u', 'base_color', 'x', 'y', 'x2', 'y2', 'width', 'height', 'width2', 'height2', 'color', 'font_color', 'labels', 'align', 'font_size', 'font_size2', 'rotation_angle', 'rotation_x', 'rotation_y', 'profile', 'nub', 'ghost', 'stepped', 'decal']
 
@@ -25,8 +24,8 @@ class Key(object):
         self.y2 = 0.0
         self.width = 1.0
         self.height = 1.0
-        self.width2 = 1.0
-        self.height2 = 1.0
+        self.width2 = 0.0
+        self.height2 = 0.0
         self.color = '#EEEEEE'
         self.font_color = '#000000'
         self.labels =[]
@@ -43,13 +42,13 @@ class Key(object):
         self.decal = False
 
     def font_path(self):
-        if self.profile in ['DCS', 'OEM', 'GMK']:
+        if self.profile in GMK_LABELS:
             return 'CherryRounded.otf'
         else:
             return 'NotoRounded.otf'
 
-    def get_base_img(self):
-        if self.profile in ['DCS', 'OEM', 'GMK']: # GMK technically not supported by KLE yet
+    def get_base_img(self): # Modify for profile folder, keytype folder - regular, space, step, special - and shading
+        if self.profile in GMK_LABELS: # GMK technically not supported by KLE yet
             return Image.open(r'GMK_Base.jpg').convert('RGBA') # GMK photo from official renders
         elif 'SPACE' in self.profile:
             color = ImageColor.getrgb(self.color)
@@ -75,7 +74,7 @@ class Key(object):
             return Image.open('SA_Base{}.jpg'.format(base_num)).convert('RGBA') # SA renders by me
 
     def get_base_color(self):
-        if self.profile in ['DCS', 'OEM', 'GMK']: # GMK technically not supported by KLE yet
+        if self.profile in GMK_LABELS: # GMK technically not supported by KLE yet
             return 0xE0
         elif 'SPACE' in self.profile:
             color = ImageColor.getrgb(self.color)
@@ -88,19 +87,19 @@ class Key(object):
             color = ImageColor.getrgb(self.color)
             bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2] # Perceptual gray
             if (bright > 0xB0):
-                return 0xE0
+                return 0xE0 # 224
             elif (bright > 0x80):
-                return 0xB0
+                return 0xB0 # 176
             elif (bright > 0x50):
-                return 0x80
+                return 0x80 # 128
             elif (bright > 0x20):
-                return 0x50
+                return 0x50 # 80,
             else:
-                return 0x20
+                return 0x20 # 32
 
     def location(self, key_img): # get pixel location of key as (left, upper, right, lower)
         u = self.u
-        x, y = self.x, self.y
+        x, y = min(self.x, self.x+self.x2), min(self.y, self.y+self.y2)
         if self.rotation_angle != 0 or self.rotation_x != 0 or self.rotation_y != 0:
             rx, ry = self.rotation_x, self.rotation_y # center about which to rotate key
             a = self.rotation_angle * math.pi / 180
@@ -113,6 +112,8 @@ class Key(object):
         return (int(x*u), int(y*u), int(x*u + key_img.width), int(y*u + key_img.height))
 
     def tint_key(self, key_img): #a image of the key, and a hex color code string
+        #return key_img # DEBUG
+
         alpha = key_img.split()[3]
         key_img = ImageCms.applyTransform(key_img, rgb2lab_transform)
         l, a, b = key_img.split()
@@ -130,23 +131,32 @@ class Key(object):
         key_img = Image.merge('RGBA', (*key_img.split(), alpha))
         return key_img
 
-    def stretch_key(self): # width and height of key in units
-        base_img = self.get_base_img()
+    def stretch_key(self, w, h, img=None): # width and height of key in units
+        if img is None:
+            base_img = self.get_base_img()
+        else:
+            base_img = img
         u = self.u
-        width, height = int(self.width*u)+1, int(self.height*u)+1 # Width & Height of image representing key
+        width, height = int(w*u)+1, int(h*u)+1 # Width & Height of image representing key
         key_img = Image.new('RGBA', (width, height)) # Lots of +1s to avoid unsightly gaps between keys
-        key_img.paste(base_img, (0, 0, u, u))
-        if width != u:
+        key_img.paste(base_img, (0, 0, base_img.width, base_img.height))
+        if width > u:
             center_part = base_img.crop((int(u/2), 0, int(u/2)+1, u)) # horizontal middle strip of image
             right_part = base_img.crop((int(u/2)+1, 0, u, u))
             for i in range(width - u + 1):
                 key_img.paste(center_part, (int(u/2) + i, 0, int(u/2) + i + 1, u))
             key_img.paste(right_part, (width - right_part.width, 0, width, u))
-        if height != u:
+        elif width < u:
+            right_part = base_img.crop((u-int(width/2), 0, u, u))
+            key_img.paste(right_part, (width - right_part.width, 0, width, u))
+        if height > u:
             middle_part = key_img.crop((0, int(u/2), width, int(u/2)+1)) # vertical middle strip of image
             bottom_part = key_img.crop((0, int(u/2)+1, width, u))
             for i in range(height - u + 1):
                 key_img.paste(middle_part, (0, int(u/2) + i, key_img.width, int(u/2) + i + 1))
+            key_img.paste(bottom_part, (0, height - bottom_part.height, width, height))
+        elif height < u:
+            bottom_part = key_img.crop((0, u-int(height/2), width, u))
             key_img.paste(bottom_part, (0, height - bottom_part.height, width, height))
         return key_img
 
@@ -181,13 +191,13 @@ class Key(object):
                 scale_factor = 9
                 min_size = 12
                 line_spacing = 12
-                width_limit = key_img.width - 55
+                width_limit = key_img.width - 60
             else:
                 offset = 12
                 scale_factor = 7
                 min_size = 16
                 line_spacing = 16
-                width_limit = key_img.width - 42
+                width_limit = key_img.width - 64
                 labels = [labels[i].upper() for i in range(len(labels))] # Only uppercase legends on SA keycaps
 
             font = ImageFont.truetype(self.font_path(), int(self.font_size*scale_factor)+min_size)
@@ -251,7 +261,43 @@ class Key(object):
                         h = font.getsize(text)[1]
                         draw.text(((key_img.width-w)/2, key_img.height-45-h-offset), text, font=font, fill=c)
 
-            return key_img 
+            return key_img
+
+    def extend(self, touch_surface):
+        x2, y2 = self.x2, self.y2
+        u = self.u
+        width = max(self.width2 + x2, self.width) if x2 >= 0 else max(self.width - x2, self.width2)
+        height = max(self.height2 + y2, self.height) if y2 >= 0 else max(self.height - y2, self.height2)
+        key_img = Image.new('RGBA', (int(width*u), int(height*u)))
+
+        special_cases = {(0.25, 0.0, 1.25, 2.0):'ISO1', (-0.25, 0.0, 1.5, 1.0):'ISO2', (-0.75, 1.0, 2.25, 1.0):'BigEnter'} # special case oddly shaped keys
+        if self.stepped == True and height == self.height == self.height2 and not self.profile.startswith(GMK_LABELS): # handle most stepped keys (only for SA)
+            key_img.paste(touch_surface, (max(int(-x2*u), 0), max(int(-y2*u), 0)))
+            if x2 < 0: # for keys with left step
+                overlap = 15 # how many pixels of overlap
+                left_img = self.get_base_img()
+                left_step = self.stretch_key(-x2+overlap/u, height, img=left_img)
+                left_step = self.tint_key(left_step)
+                key_img.paste(left_step, (max(int(x2*u), 0), max(int(y2*u), 0)))
+            if max(x2*u, 0)+self.width < width: # for right and double stepped keys
+                overlap = 15 # how many pixels of overlap
+                right_img = self.get_base_img()
+                right_step = self.stretch_key(width-max(-x2, 0)-self.width+overlap/u, self.height, img=right_img)
+                right_step = self.tint_key(right_step)
+                key_img.paste(right_step, (max(int(-x2*u), 0)+int(self.width*u)-overlap, 0))
+        # elif (x2, y2, self.width2, self.height2) in special_cases and not self.profile.startswith(GMK_LABELS): # handle special cases with second rectangle (only for SA)
+        #     key_img.paste(touch_surface, (max(int(-x2*u), 0), max(int(-y2*u), 0)))
+        #     #extra_surface = Image.open('SA_Special_{}.jpg'.format(special_cases[(x2, y2, self.width2, self.height2)])).convert('RGBA')
+        #     extra_surface = Image.open('ISO_Left.jpg').convert('RGBA') # DEBUG
+        #     extra_surface = self.tint_key(extra_surface)
+        #     key_img.paste(extra_surface, (0, 0))
+        else: # sorta handle arbitrary secondary rectangles
+            extra_surface = self.stretch_key(self.width2, self.height2)
+            extra_surface = self.tint_key(extra_surface)
+            key_img.paste(extra_surface, (max(int(x2*u), 0), max(int(y2*u), 0)))
+            key_img.paste(touch_surface, (max(int(-x2*u), 0), max(int(-y2*u), 0)))
+
+        return key_img
 
     def render(self):
         self.base_color = self.get_base_color()
@@ -259,9 +305,11 @@ class Key(object):
         if self.decal:
             key_img = self.decal_key()
         else:
-            key_img = self.stretch_key()
+            key_img = self.stretch_key(self.width, self.height)
             key_img = self.tint_key(key_img)
         key_img = self.text_key(key_img)
+        #if self.width2 != 0.0 or self.height2 != 0.0:
+        #    key_img = self.extend(key_img)
         if self.rotation_angle != 0:
             key_img = key_img.resize(tuple(i+2 for i in key_img.size))
             key_img = key_img.rotate(-self.rotation_angle, resample=Image.BICUBIC, expand=1)

@@ -17,6 +17,8 @@ numpy==1.12.1
 olefile==0.44
 packaging==16.8
 Pillow==4.1.1
+PyGithub==1.34
+PyJWT==1.5.0
 pyparsing==2.2.0
 python-dateutil==2.6.0
 python-dotenv==0.6.4

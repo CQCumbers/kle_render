@@ -1,12 +1,16 @@
 #!bin/python
 from flask import Flask, Blueprint, redirect, send_file, render_template, flash
 from flask_restplus import Api, Resource, fields
+
 from flask_cors import CORS, cross_origin
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField
+
+from github import Github
 from io import BytesIO
 import requests, json
+
 import kle_render
 
 app = Flask(__name__)
@@ -26,7 +30,6 @@ post.add_argument(
 
 def serve_pil_image(pil_img):
     img_io = BytesIO()
-    #pil_img.save(img_io, 'JPEG', optimize=True)
     pil_img.save(img_io, 'PNG')
     img_io.seek(0)
     return send_file(img_io, mimetype='image/jpeg')
@@ -35,9 +38,9 @@ def serve_pil_image(pil_img):
 @api.doc(params={'id': 'Copy from keyboard-layout-editor.com/#/gists/<id>'})
 class FromGist(Resource):
     def get(self, id):
-        request_json = requests.get('http://api.github.com/gists/%s' % id).json()
-        content_url = [value for key, value in request_json['files'].items() if key.endswith('.kbd.json')][0]['raw_url']
-        content = requests.get([value for key, value in request_json['files'].items() if key.endswith('.kbd.json')][0]['raw_url']).json()
+        token = app.config['API_TOKEN']
+        g = Github(token) # authenticate to avoid rate limits
+        content = json.loads([value for key, value in g.get_gist(id).files.items() if key.endswith('.kbd.json')][0].content)
         data = kle_render.deserialise(content)
         img = kle_render.render_keyboard(data)
         return serve_pil_image(img)
