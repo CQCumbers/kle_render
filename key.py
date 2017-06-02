@@ -53,9 +53,12 @@ class Key(object):
         profile = full_profile[0]
         row = full_profile[1] if len(full_profile) > 1 and full_profile[1] in row_profiles else 'BASE'
 
+        if self.width >= 6.0 and self.height == 1.0: # Default make long, narrow keys spacebars
+            row = 'SPACE'
+
         if profile in GMK_LABELS: 
             return Image.open('images/GMK_BASE.png').convert('RGBA') # GMK photo from official renders
-        else:
+        else: # default to SA profile
             color = ImageColor.getrgb(self.color)
             bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
             if (bright > 0xB0):
@@ -215,8 +218,13 @@ class Key(object):
             c = tuple(band + 0x26 for band in c) # Simulates reflectivity 
 
             if self.align == -1: # if not explicitly aligned
-                if not self.profile.startswith(GMK_LABELS) and not self.decal and len(labels) == 1 and labels[0] != '': # If single label and not explicitly aligned, center align SA profile
-                    self.align = 7
+                if not self.profile.startswith(GMK_LABELS) and not self.decal and labels[0] != '': # If single label and not explicitly aligned, default center align SA profile
+                    if len(labels) == 1:
+                        self.align = 7
+                    elif len(labels) <= 3:
+                        self.align = 5
+                    else:
+                        self.align = 0
                 else:
                     self.align = 0
             
