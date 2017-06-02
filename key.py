@@ -193,7 +193,7 @@ class Key(object):
             c = ImageColor.getrgb(self.font_color)
             c = tuple(band + 0x26 for band in c) # Simulates reflectivity 
 
-            if align == 0 and len(labels) <= 2 and labels[0] != '': # If 2 or fewer labels and not explicitly aligned, center accurately depending on profile
+            if self.align == 0 and len(labels) <= 2 and labels[0] != '': # If 2 or fewer labels and not explicitly aligned, center accurately depending on profile
                 labels = [text for label in labels for text in label.split('\n')]
                 if self.profile.startswith(GMK_LABELS) or self.decal:
                     draw.multiline_text((45, 45-offset), '\n'.join(labels), font=font, fill=c, spacing=line_spacing)
