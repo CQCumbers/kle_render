@@ -1,4 +1,4 @@
-from PIL import Image, ImageColor
+from PIL import Image, ImageColor, ImageDraw, ImageFont
 from multiprocessing.dummy import Pool as ThreadPool
 from key import Key
 import copy, html, re, json
@@ -32,7 +32,11 @@ def render_keyboard(data):
     pool.map(render_key, keys)
     pool.close() 
     pool.join()
-    keyboard = keyboard.crop((0, 0, max_x + int(round(border/scale)), max_y + int(round(border/scale))))
+
+    max_x += int(round(border/scale))
+    max_y += int(round(border/scale))
+    keyboard = watermark(keyboard)
+    keyboard = keyboard.crop((0, 0, max_x, max_y))
     return keyboard
 
 def render_key(key):
@@ -43,6 +47,24 @@ def render_key(key):
     max_y = max(location[3], max_y)
     key_img = key_img.resize(tuple([int(i/scale)+1 for i in key_img.size]), resample=Image.ANTIALIAS)
     keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
+
+def watermark(img):
+    global max_x, max_y
+    text = 'Made with kle-render.herokuapp.com'
+    margin = 5
+    c1 = ImageColor.getrgb('#202020')
+    c2 = ImageColor.getrgb('#E0E0E0')
+
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.truetype('NotoRounded.otf', 12)
+    w, h = font.getsize(text)
+    max_x = max(int(w/scale), max_x)
+    max_y += h + 2*margin
+
+    draw.rectangle((0, max_y-h-margin*2, max_x+1, max_y+1), fill=c1)
+    draw.text((margin, max_y-h-margin), text, font=font, fill=c2)
+
+    return img
 
 def html_to_unicode(html): # unescaped html input
     cleanr = re.compile(r'<.*?>')
