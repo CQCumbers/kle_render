@@ -215,7 +215,7 @@ class Key(object):
             c = tuple(band + 0x26 for band in c) # Simulates reflectivity 
 
             if self.align == -1: # if not explicitly aligned
-                if not self.profile.startswith(GMK_LABELS) and not self.decal and len(labels) <= 2 and labels[0] != '': # If 2 or fewer labels and not explicitly aligned, align accurately depending on profile
+                if not self.profile.startswith(GMK_LABELS) and not self.decal and len(labels) == 1 and labels[0] != '': # If single label and not explicitly aligned, center align SA profile
                     self.align = 7
                 else:
                     self.align = 0
