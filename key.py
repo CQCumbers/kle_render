@@ -29,7 +29,7 @@ class Key(object):
         self.color = '#EEEEEE'
         self.font_color = '#000000'
         self.labels =[]
-        self.align = 0
+        self.align = -1
         self.font_size = 3.0
         self.font_size2 = 3.0
         self.rotation_angle = 0.0
@@ -162,9 +162,30 @@ class Key(object):
         key_img = Image.new('RGBA', (w+64, h+108))
         return key_img
 
+    def break_text(self, input, font, limit):
+        texts = input.splitlines()
+        output = []
+        for text in texts:
+            words = text.split()
+            lines = [[]]
+            while(words):
+                word = words.pop(0)
+                if font.getsize(" ".join(lines[-1]))[0] + 1 + font.getsize(word)[0] < limit:
+                    lines[-1].append(word)
+                else:
+                    lines.append([word])
+            output.extend([' '.join(words) for words in lines if len(words) > 0])
+        return '\n'.join(output)
+
+    def text_size(self, full_label, font, line_spacing): #full label should already have break_text used on it
+        labels = full_label.splitlines()
+        w = max([font.getsize(text)[0] for text in labels])
+        h = sum([font.getsize(text)[1] for text in labels]) # sum of heights
+        h += line_spacing*(len([text for text in labels])-1)
+        return (w, h)
+
     def text_key(self, key_img):
         labels = self.labels
-        #labels = [labels[i] for i in range(len(labels)) if len(labels[i]) > 0 and '</i>' not in labels[i] and i not in (4,5)] # ignore blank lines, html, and labels on front (not top) of key
         if len(labels) <= 0:
             return key_img # if blank, exit immediately
         else:
@@ -193,61 +214,44 @@ class Key(object):
             c = ImageColor.getrgb(self.font_color)
             c = tuple(band + 0x26 for band in c) # Simulates reflectivity 
 
-            if self.align == 0 and len(labels) <= 2 and labels[0] != '': # If 2 or fewer labels and not explicitly aligned, center accurately depending on profile
-                labels = [text for label in labels for text in label.split('\n')]
-                if self.profile.startswith(GMK_LABELS) or self.decal:
-                    draw.multiline_text((45, 45-offset), '\n'.join(labels), font=font, fill=c, spacing=line_spacing)
+            if self.align == -1: # if not explicitly aligned
+                if not self.profile.startswith(GMK_LABELS) and not self.decal and len(labels) <= 2 and labels[0] != '': # If 2 or fewer labels and not explicitly aligned, align accurately depending on profile
+                    self.align = 7
                 else:
-                    w = max([font.getsize(text)[0] for text in labels]) # max of label widths
-                    if len(labels) == 1 and w > width_limit and not self.decal: # wrap text only for single labels
-                        labels = [line for label in labels for line in textwrap.wrap(label, width=int(width_limit/(font.getsize('L')[0])))]
-                        w = max([font.getsize(text)[0] for text in labels])
-                    h = sum([font.getsize(text)[1] for text in labels]) # sum of heights
-                    h += line_spacing*(len([text for text in labels])-1)
-                    draw.multiline_text((int((key_img.width-w)/2), int((key_img.height-h)/2 - offset)), '\n'.join(labels), font=font, fill=c, spacing=line_spacing, align='center')
-            else: # Otherwise copy keyboard layout editor legend positions
-                alignments = [[1, 9, 3, 7, 10, 8, 2, 11, 4, 5, 12, 6],
-                            [-1, 1, -1, -1, 7, -1, -1, 2, -1, 5, 12, 6],
-                            [-1, -1, -1, 1, 9, 3, -1, -1, -1, 5, 12, 6],
-                            [-1, -1, -1, -1, 1, -1, -1, -1, -1, 5, 12, 6],
-                            [1, 9, 3, 7, 10, 8, 2, 11, 4, -1, 5, -1],
-                            [-1, 1, -1, -1, 7, -1, -1, 2, -1, -1, 5, -1],
-                            [-1, -1, -1, 1, 9, 3, -1, -1, -1, -1, 5, -1],
-                            [-1, -1, -1, -1, 1, -1, -1, -1, -1, -1, 5, -1]]
-                align = [i-1 for i in alignments[self.align]]
+                    self.align = 0
+            
+            alignments = [[1, 9, 3, 7, 10, 8, 2, 11, 4, 5, 12, 6],
+                        [-1, 1, -1, -1, 7, -1, -1, 2, -1, 5, 12, 6],
+                        [-1, -1, -1, 1, 9, 3, -1, -1, -1, 5, 12, 6],
+                        [-1, -1, -1, -1, 1, -1, -1, -1, -1, 5, 12, 6],
+                        [1, 9, 3, 7, 10, 8, 2, 11, 4, -1, 5, -1],
+                        [-1, 1, -1, -1, 7, -1, -1, 2, -1, -1, 5, -1],
+                        [-1, -1, -1, 1, 9, 3, -1, -1, -1, -1, 5, -1],
+                        [-1, -1, -1, -1, 1, -1, -1, -1, -1, -1, 5, -1]]
+            align = [i-1 for i in alignments[self.align]]
 
-                for i in range(len(labels)):
-                    text = labels[i]
+            for i in range(len(labels)):
+                if labels[i] != '':
+                    text = self.break_text(labels[i], font, width_limit)
+                    w, h = self.text_size(text, font, line_spacing)
                     if i == align[0]:
-                        draw.text((45, 45-offset), text, font=font, fill=c)
+                        draw.multiline_text((45, 45-offset), text, font=font, fill=c, spacing=line_spacing, align='left')
                     elif i == align[6]:
-                       h = font.getsize(text)[1]
-                       draw.text((45, key_img.height-45-h-offset), text, font=font, fill=c)
+                       draw.multiline_text((45, key_img.height-45-h-offset), text, font=font, fill=c, spacing=line_spacing, align='center')
                     elif i == align[2]:
-                        w = font.getsize(text)[0]
-                        draw.text((key_img.width-45-w, 45-offset), text, font=font, fill=c)
+                        draw.multiline_text((key_img.width-45-w, 45-offset), text, font=font, fill=c, spacing=line_spacing, align='right')
                     elif i == align[8]:
-                        w = font.getsize(text)[0]
-                        h = font.getsize(text)[1]
-                        draw.text((key_img.width-45-w, key_img.height-45-h-offset), text, font=font, fill=c)
+                        draw.multiline_text((key_img.width-45-w, key_img.height-45-h-offset), text, font=font, fill=c, spacing=line_spacing, align='left')
                     elif i == align[3]:
-                        h = font.getsize(text)[1]
-                        draw.text((45, (key_img.height-h)/2-offset), text, font=font, fill=c)
+                        draw.multiline_text((45, (key_img.height-h)/2-offset), text, font=font, fill=c, spacing=line_spacing, align='center')
                     elif i == align[5]:
-                        w = font.getsize(text)[0]
-                        h = font.getsize(text)[1]
-                        draw.text((key_img.width-45-w, (key_img.height-h)/2-offset), text, font=font, fill=c)
+                        draw.multiline_text((key_img.width-45-w, (key_img.height-h)/2-offset), text, font=font, fill=c, spacing=line_spacing, align='right')
                     elif i == align[1]:
-                        w = font.getsize(text)[0]
-                        draw.text(((key_img.width-w)/2, 45-offset), text, font=font, fill=c)
+                        draw.multiline_text(((key_img.width-w)/2, 45-offset), text, font=font, fill=c, spacing=line_spacing, align='left')
                     elif i == align[4]:
-                        w = font.getsize(text)[0]
-                        h = font.getsize(text)[1]
-                        draw.text(((key_img.width-w)/2, (key_img.height-h)/2-offset), text, font=font, fill=c)
+                        draw.multiline_text(((key_img.width-w)/2, (key_img.height-h)/2-offset), text, font=font, fill=c, spacing=line_spacing, align='center')
                     elif i == align[7]:
-                        w = font.getsize(text)[0]
-                        h = font.getsize(text)[1]
-                        draw.text(((key_img.width-w)/2, key_img.height-45-h-offset), text, font=font, fill=c)
+                        draw.multiline_text(((key_img.width-w)/2, key_img.height-45-h-offset), text, font=font, fill=c, spacing=line_spacing, align='right')
 
             return key_img
 
