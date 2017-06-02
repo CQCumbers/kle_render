@@ -32,7 +32,7 @@ def serve_pil_image(pil_img):
     img_io = BytesIO()
     pil_img.save(img_io, 'PNG')
     img_io.seek(0)
-    return send_file(img_io, mimetype='image/jpeg')
+    return send_file(img_io, mimetype='image/png')
 
 @api.route('/<id>', endpoint='from_gist')
 @api.doc(params={'id': 'Copy from keyboard-layout-editor.com/#/gists/<id>'})

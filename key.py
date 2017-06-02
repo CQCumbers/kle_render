@@ -42,22 +42,19 @@ class Key(object):
         self.decal = False
 
     def font_path(self):
-        if self.profile in GMK_LABELS:
+        if self.profile.startswith(GMK_LABELS):
             return 'CherryRounded.otf'
         else:
             return 'NotoRounded.otf'
 
-    def get_base_img(self): # Modify for profile folder, keytype folder - regular, space, step, special - and shading
-        if self.profile in GMK_LABELS: # GMK technically not supported by KLE yet
-            return Image.open(r'GMK_Base.jpg').convert('RGBA') # GMK photo from official renders
-        elif 'SPACE' in self.profile:
-            color = ImageColor.getrgb(self.color)
-            bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
-            if (bright > 0x50):
-                base_num = '1'
-            else:
-                base_num = '2'
-            return Image.open('SA_Space_Base{}.jpg'.format(base_num)).convert('RGBA') # SA renders by me
+    def get_base_img(self, full_profile=[]):
+        full_profile = self.profile.split(' ') if len(full_profile) < 1 else full_profile
+        row_profiles = ['SPACE', 'ISO', 'BIGENTER', 'STEP', 'BASE'] # row profile internally used to specify keys needing special base images
+        profile = full_profile[0]
+        row = full_profile[1] if len(full_profile) > 1 and full_profile[1] in row_profiles else 'BASE'
+
+        if profile in GMK_LABELS: 
+            return Image.open('images/GMK_BASE.png').convert('RGBA') # GMK photo from official renders
         else:
             color = ImageColor.getrgb(self.color)
             bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
@@ -71,18 +68,11 @@ class Key(object):
                 base_num = '4'
             else:
                 base_num = '5'
-            return Image.open('SA_Base{}.jpg'.format(base_num)).convert('RGBA') # SA renders by me
+            return Image.open('images/SA_{}{}.png'.format(row, base_num)).convert('RGBA') # All SA renders by CQ_Cumbers (me)
 
     def get_base_color(self):
-        if self.profile in GMK_LABELS: # GMK technically not supported by KLE yet
+        if self.profile.startswith(GMK_LABELS):
             return 0xE0
-        elif 'SPACE' in self.profile:
-            color = ImageColor.getrgb(self.color)
-            bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
-            if (bright > 0x50):
-                return 0xE0
-            else:
-                return 0x50
         else:
             color = ImageColor.getrgb(self.color)
             bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2] # Perceptual gray
@@ -112,8 +102,6 @@ class Key(object):
         return (int(x*u), int(y*u), int(x*u + key_img.width), int(y*u + key_img.height))
 
     def tint_key(self, key_img): #a image of the key, and a hex color code string
-        #return key_img # DEBUG
-
         alpha = key_img.split()[3]
         key_img = ImageCms.applyTransform(key_img, rgb2lab_transform)
         l, a, b = key_img.split()
@@ -183,7 +171,7 @@ class Key(object):
             if self.decal:
                 offset = 0  # pixels to shift text upwards to center it in keycap top
                 scale_factor = 7 # multiply this by the legend size and add to min_size to get font size for that legend
-                min_size = 16
+                min_size = 14
                 line_spacing = 16 # space between lines (only matters for <= 2 labels)
                 width_limit = key_img.width # maximum line width in pixels before automatic line break (Only matters for 1 label)
             elif self.profile.startswith(GMK_LABELS):
@@ -195,7 +183,7 @@ class Key(object):
             else:
                 offset = 12
                 scale_factor = 7
-                min_size = 16
+                min_size = 14
                 line_spacing = 16
                 width_limit = key_img.width - 64
                 labels = [labels[i].upper() for i in range(len(labels))] # Only uppercase legends on SA keycaps
@@ -263,39 +251,44 @@ class Key(object):
 
             return key_img
 
-    def extend(self, touch_surface):
+    def extend(self):
         x2, y2 = self.x2, self.y2
         u = self.u
         width = max(self.width2 + x2, self.width) if x2 >= 0 else max(self.width - x2, self.width2)
         height = max(self.height2 + y2, self.height) if y2 >= 0 else max(self.height - y2, self.height2)
         key_img = Image.new('RGBA', (int(width*u), int(height*u)))
 
-        special_cases = {(0.25, 0.0, 1.25, 2.0):'ISO1', (-0.25, 0.0, 1.5, 1.0):'ISO2', (-0.75, 1.0, 2.25, 1.0):'BigEnter'} # special case oddly shaped keys
-        if self.stepped == True and height == self.height == self.height2 and not self.profile.startswith(GMK_LABELS): # handle most stepped keys (only for SA)
-            key_img.paste(touch_surface, (max(int(-x2*u), 0), max(int(-y2*u), 0)))
-            if x2 < 0: # for keys with left step
-                overlap = 15 # how many pixels of overlap
-                left_img = self.get_base_img()
-                left_step = self.stretch_key(-x2+overlap/u, height, img=left_img)
-                left_step = self.tint_key(left_step)
-                key_img.paste(left_step, (max(int(x2*u), 0), max(int(y2*u), 0)))
-            if max(x2*u, 0)+self.width < width: # for right and double stepped keys
-                overlap = 15 # how many pixels of overlap
-                right_img = self.get_base_img()
-                right_step = self.stretch_key(width-max(-x2, 0)-self.width+overlap/u, self.height, img=right_img)
-                right_step = self.tint_key(right_step)
-                key_img.paste(right_step, (max(int(-x2*u), 0)+int(self.width*u)-overlap, 0))
-        # elif (x2, y2, self.width2, self.height2) in special_cases and not self.profile.startswith(GMK_LABELS): # handle special cases with second rectangle (only for SA)
-        #     key_img.paste(touch_surface, (max(int(-x2*u), 0), max(int(-y2*u), 0)))
-        #     #extra_surface = Image.open('SA_Special_{}.jpg'.format(special_cases[(x2, y2, self.width2, self.height2)])).convert('RGBA')
-        #     extra_surface = Image.open('ISO_Left.jpg').convert('RGBA') # DEBUG
-        #     extra_surface = self.tint_key(extra_surface)
-        #     key_img.paste(extra_surface, (0, 0))
-        else: # sorta handle arbitrary secondary rectangles
-            extra_surface = self.stretch_key(self.width2, self.height2)
-            extra_surface = self.tint_key(extra_surface)
-            key_img.paste(extra_surface, (max(int(x2*u), 0), max(int(y2*u), 0)))
-            key_img.paste(touch_surface, (max(int(-x2*u), 0), max(int(-y2*u), 0)))
+        special_cases = {(1.5, 1.0, 0.25, 0.0, 1.25, 2.0):'ISO', (1.25, 2.0, -0.25, 0.0, 1.5, 1.0):'ISO', (1.5, 2.0, -0.75, 1.0, 2.25, 1.0):'BIGENTER'} # special case oddly shaped keys
+        identifiers = (self.width, self.height, x2, y2, self.width2, self.height2)
+        if identifiers in special_cases and not self.profile.startswith(GMK_LABELS): # handle special cases with second rectangle (only for SA)
+            key_img = self.get_base_img(full_profile=[self.profile.split(' ')[0], special_cases[identifiers]])
+            key_img = self.tint_key(key_img)
+            text = self.text_key(Image.new('RGBA', (int(self.width*u), int(self.height*u))))
+            key_img.paste(text, (max(int(-x2*u), 0), max(int(-y2*u), 0)), mask=text)
+        else:
+            touch_surface = self.stretch_key(self.width, self.height)
+            touch_surface = self.tint_key(touch_surface)
+            if self.stepped == True and height == self.height == self.height2 and not self.profile.startswith(GMK_LABELS): # handle most stepped keys (only for SA)
+                key_img.paste(touch_surface, (max(int(-x2*u), 0), max(int(-y2*u), 0)))
+                overlap = 60 # how many pixels of overlap
+                if x2 < 0: # for keys with left step
+                    left_img = self.get_base_img(full_profile=[self.profile.split(' ')[0], 'STEP']).transpose(Image.FLIP_LEFT_RIGHT)
+                    left_step = self.stretch_key(-x2+overlap/u, height, img=left_img)
+                    left_step = self.tint_key(left_step)
+                    key_img.paste(left_step, (max(int(x2*u), 0), max(int(y2*u), 0)))
+                if max(x2*u, 0)+self.width < width: # for right and double stepped keys
+                    right_img = self.get_base_img(full_profile=[self.profile.split(' ')[0], 'STEP'])
+                    right_step = self.stretch_key(width-max(-x2, 0)-self.width+overlap/u, self.height, img=right_img)
+                    right_step = self.tint_key(right_step)
+                    key_img.paste(right_step, (max(int(-x2*u), 0)+int(self.width*u)-overlap, 0))
+                text = self.text_key(Image.new('RGBA', (int(self.width*u), int(self.height*u))))
+                key_img.paste(text, (max(int(-x2*u), 0), max(int(-y2*u), 0)), mask=text)
+            else: # sorta handle arbitrary secondary rectangles
+                touch_surface = self.text_key(touch_surface)
+                extra_surface = self.stretch_key(self.width2, self.height2)
+                extra_surface = self.tint_key(extra_surface)
+                key_img.paste(extra_surface, (max(int(x2*u), 0), max(int(y2*u), 0)))
+                key_img.paste(touch_surface, (max(int(-x2*u), 0), max(int(-y2*u), 0)))
 
         return key_img
 
@@ -304,12 +297,14 @@ class Key(object):
 
         if self.decal:
             key_img = self.decal_key()
+            key_img = self.text_key(key_img)
+        elif self.width2 != 0.0 or self.height2 != 0.0:
+            key_img = self.extend()
         else:
             key_img = self.stretch_key(self.width, self.height)
             key_img = self.tint_key(key_img)
-        key_img = self.text_key(key_img)
-        #if self.width2 != 0.0 or self.height2 != 0.0:
-        #    key_img = self.extend(key_img)
+            key_img = self.text_key(key_img)
+
         if self.rotation_angle != 0:
             key_img = key_img.resize(tuple(i+2 for i in key_img.size))
             key_img = key_img.rotate(-self.rotation_angle, resample=Image.BICUBIC, expand=1)

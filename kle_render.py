@@ -16,8 +16,8 @@ def render_keyboard(data):
         c = ImageColor.getrgb(data['meta']['backcolor'])
     else:
         c = ImageColor.getrgb('#000000')
-    if len(keys) < 10:
-        scale = 1
+    if len(keys) < 25:
+        scale = 2
     elif len(keys) < 200:
         scale = 3
     elif len(keys) < 540:
@@ -25,7 +25,6 @@ def render_keyboard(data):
     else:
         scale = 5
     s = (160 * 0.97**len(keys) + 40 + 2*border)*len(keys)
-    #s = len(keys) * 300 # DEBUG
     keyboard = Image.new('RGBA', (int(round(s/scale)),int(round(s/scale))), color=c)
     max_x = max_y = 0
 
@@ -42,7 +41,7 @@ def render_key(key):
     location = [int((coord+border)/scale) for coord in key.location(key_img)]
     max_x = max(location[2], max_x)
     max_y = max(location[3], max_y)
-    key_img = key_img.resize(tuple([int(i/scale)+1 for i in key_img.size]), resample=Image.LANCZOS) # Lanczos is high quality downsampling algorithm
+    key_img = key_img.resize(tuple([int(i/scale)+1 for i in key_img.size]), resample=Image.ANTIALIAS)
     keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
 
 def html_to_unicode(html): # unescaped html input

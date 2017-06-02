@@ -5,8 +5,6 @@ This project uses Pillow (Python Image Library), Flask, and Flask-RESTPlus to se
 
 ### TODO:
 - Add support for front-printed legends
-- Add support for L-shaped keys
-- Add support for stepped keys
 
 Check it out at [kle-render.herokuapp.com](https://kle-render.herokuapp.com/)
 
