@@ -72,8 +72,8 @@ def html_to_unicode(html): # unescaped html input
         d = json.load(data1)
     with open('kbd-webfont2unicode.json') as data2:
         d2 = json.load(data2)
-    pattern = re.compile('|'.join(("<i class='fa {}'></i>".format(icon) for icon in d.keys()))) # I know, re's and html...
-    pattern2 = re.compile('|'.join(("<i class='kb kb-{}'></i>".format(icon) for icon in d2.keys())))
+    pattern = re.compile('|'.join(('<i class=[\'\"]fa ({})[\'\"]></i>'.format(icon) for icon in d.keys()))) # I know, re's and html...
+    pattern2 = re.compile('|'.join(('<i class=[\'\"]kb kb-({})[\'\"]></i>'.format(icon) for icon in d2.keys())))
 
     result = pattern.sub(lambda x: chr(int(d[x.group()[13:-6]], 16)), html)
     result = pattern2.sub(lambda x: chr(int(d2[x.group()[16:-6]], 16)), result)
@@ -120,11 +120,10 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
                     if 'c' in key:
                         current.color = key['c'].replace(';', '')
                     if 't' in key:
-                        f_color = key['t'].replace(';', '').replace('\n', '')
-                        if '#' in f_color[1:]: # hack to prevent multiple font colors from causing crash
-                            f_color = f_color[:4]
-                        if color_format.match(f_color): # more gracefully handle invalid colors
-                            current.font_color = f_color
+                        f_colors = [''.join(c for c in line if c in '0123456789abcdefABCDEF#') for line in key['t'].splitlines()]
+                        f_colors = [color for color in f_colors if color_format.match(color) or not color.strip()] # more gracefully handle invalid colors
+                        if len(f_colors) > 0:
+                            current.font_color = f_colors
                     if 'x' in key:
                         current.x += float(key['x'])
                     if 'y' in key:

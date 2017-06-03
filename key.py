@@ -27,7 +27,7 @@ class Key(object):
         self.width2 = 0.0
         self.height2 = 0.0
         self.color = '#EEEEEE'
-        self.font_color = '#000000'
+        self.font_color = ['#000000']
         self.labels =[]
         self.align = -1
         self.font_size = 3.0
@@ -194,28 +194,26 @@ class Key(object):
         else:
             if self.decal:
                 offset = 0  # pixels to shift text upwards to center it in keycap top
-                scale_factor = 7 # multiply this by the legend size and add to min_size to get font size for that legend
-                min_size = 14
+                scale_factor = 6#7 # multiply this by the legend size and add to min_size to get font size for that legend
+                min_size = 18#14
                 line_spacing = 16 # space between lines (only matters for <= 2 labels)
                 width_limit = key_img.width # maximum line width in pixels before automatic line break (Only matters for 1 label)
             elif self.profile.startswith(GMK_LABELS):
                 offset = 12
-                scale_factor = 9
-                min_size = 12
+                scale_factor = 6#9
+                min_size = 18#12
                 line_spacing = 12
                 width_limit = key_img.width - 60
             else:
                 offset = 12
-                scale_factor = 7
-                min_size = 14
+                scale_factor = 6
+                min_size = 18
                 line_spacing = 16
                 width_limit = key_img.width - 64
                 labels = [labels[i].upper() for i in range(len(labels))] # Only uppercase legends on SA keycaps
 
             font = ImageFont.truetype(self.font_path(), int(self.font_size*scale_factor)+min_size)
             draw = ImageDraw.Draw(key_img)
-            c = ImageColor.getrgb(self.font_color)
-            c = tuple(band + 0x26 for band in c) # Simulates reflectivity 
 
             if self.align == -1: # if not explicitly aligned
                 if not self.profile.startswith(GMK_LABELS) and not self.decal and labels[0] != '': # If single label and not explicitly aligned, default center align SA profile
@@ -239,9 +237,11 @@ class Key(object):
             align = [i-1 for i in alignments[self.align]]
 
             for i in range(len(labels)):
-                if labels[i] != '':
+                if labels[i].strip(): # ignores empty and whitespace only strings
                     text = self.break_text(labels[i], font, width_limit)
                     w, h = self.text_size(text, font, line_spacing)
+                    c = ImageColor.getrgb(self.font_color[i] if i < len(self.font_color) and len(self.font_color[i]) > 0 else self.font_color[0]) # color defaults to first if unspecified
+                    c = tuple(band + 0x26 for band in c) # Simulates reflectivity 
                     if i == align[0]:
                         draw.multiline_text((45, 45-offset), text, font=font, fill=c, spacing=line_spacing, align='left')
                     elif i == align[6]:
