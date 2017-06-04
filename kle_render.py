@@ -112,7 +112,7 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
                     if 'a' in key:
                         current.align = int(key['a'])
                     if 'f' in key:
-                        current.font_size = current.font_size2 = float(key['f'])
+                        current.font_size = float(key['f'])
                     if 'f2' in key:
                         current.font_size2 = float(key['f2'])
                     if 'p' in key:

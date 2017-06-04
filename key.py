@@ -109,11 +109,13 @@ class Key(object):
         rgb_color = sRGBColor(*ImageColor.getrgb(self.color), is_upscaled=True)
         lab_color = convert_color(rgb_color, LabColor)
 
-        l1, a1, b1 = [int(i) for i in lab_color.get_value_tuple()]
-        l1 = int(l1*255/100)
+        l1, a1, b1 = lab_color.get_value_tuple()
+        l1 = int(l1*256/100)
+        a1 = int(a1+128) #a1 should be scaled by 128/100, but desaturation looks more natural
+        b1 = int(b1+128)
         l = ImageMath.eval('l2 - l3 + l1', l2=l, l3=self.base_color, l1=l1).convert('L')
-        a = ImageMath.eval('a2 + a1', a2=a, a1=a1, l2=l).convert('L')
-        b = ImageMath.eval('b2 + b1', b2=b, b1=b1, l2=l).convert('L')
+        a = ImageMath.eval('a2 - a2 + a1', a2=a, a1=a1, l2=l).convert('L')
+        b = ImageMath.eval('b2 - b2 + b1', b2=b, b1=b1, l2=l).convert('L')
 
         key_img = Image.merge('LAB', (l, a, b))
         key_img = ImageCms.applyTransform(key_img, lab2rgb_transform)
@@ -258,7 +260,20 @@ class Key(object):
                         draw.multiline_text(((key_img.width-w)/2, (key_img.height-h)/2-offset), text, font=font, fill=c, spacing=line_spacing, align='center')
                     elif i == align[7]:
                         draw.multiline_text(((key_img.width-w)/2, key_img.height-45-h-offset), text, font=font, fill=c, spacing=line_spacing, align='right')
-
+                    elif i == align[9] or i == align[10] or i == align[11]:
+                        font2 = ImageFont.truetype(self.font_path(), int(3.0*scale_factor)+min_size) # front printed legends are apparently always size 3
+                        text = self.break_text(labels[i], font2, width_limit)
+                        w, h = self.text_size(text, font2, line_spacing)
+                        front_plane = Image.new('RGBA', (key_img.width, 40*2))
+                        draw2 = ImageDraw.Draw(front_plane)
+                        if i == align[9]:
+                            draw2.multiline_text((45, 0), text, font=font2, fill=c, spacing=line_spacing, align='left')
+                        elif i == align[10]:
+                            draw2.multiline_text(((key_img.width-w)/2, 0), text, font=font2, fill=c, spacing=line_spacing, align='center')
+                        else:
+                            draw2.multiline_text((key_img.width-45-w, 0), text, font=font2, fill=c, spacing=line_spacing, align='right')
+                        front_plane = front_plane.resize((key_img.width, 40))
+                        key_img.paste(front_plane, (0, key_img.height-front_plane.height), mask=front_plane)
             return key_img
 
     def extend(self):
