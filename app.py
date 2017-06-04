@@ -71,9 +71,9 @@ def flash_errors(form):
 def index():
     form = InputForm()
     if form.validate_on_submit():
-        if len(form.url.data) > 1:
-            if form.url.data.startswith('http://www.keyboard-layout-editor.com/#/gists/'):
-                return redirect('/api/'+form.url.data[46:])
+        if len(form.url.data) > 0:
+            if 'keyboard-layout-editor.com/#/gists/' in g.form.url.data:
+                return redirect('/api/'+form.url.data.split('gists/', 1)[1])
             else:
                 flash("Not a valid Keyboard Layout Editor Gist")
         elif form.json.data != None:

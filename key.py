@@ -1,7 +1,7 @@
-from PIL import Image, ImageMath, ImageColor, ImageCms, ImageDraw, ImageFont
+from PIL import Image, ImageMath, ImageColor, ImageCms, ImageDraw, ImageFont, ImageFilter
 from colormath.color_objects import LabColor, sRGBColor
 from colormath.color_conversions import convert_color
-import math, textwrap
+import math
 
 srgb_profile = ImageCms.createProfile('sRGB')
 lab_profile = ImageCms.createProfile('LAB')
@@ -50,45 +50,43 @@ class Key(object):
     def get_base_img(self, full_profile=[]):
         full_profile = self.profile.split(' ') if len(full_profile) < 1 else full_profile
         row_profiles = ['SPACE', 'ISO', 'BIGENTER', 'STEP', 'BASE'] # row profile internally used to specify keys needing special base images
-        profile = full_profile[0]
-        row = full_profile[1] if len(full_profile) > 1 and full_profile[1] in row_profiles else 'BASE'
+        profile = 'GMK' if full_profile[0] in GMK_LABELS else 'SA'
+        if profile == 'GMK':
+            row = full_profile[1] if len(full_profile) > 1 and full_profile[1] in ['SPACE', 'STEP', 'BASE'] else 'BASE'
+        else:
+            row = full_profile[1] if len(full_profile) > 1 and full_profile[1] in row_profiles else 'BASE'
 
         if self.width >= 6.0 and self.height == 1.0: # Default make long, narrow keys spacebars
             row = 'SPACE'
 
-        if profile in GMK_LABELS: 
-            return Image.open('images/GMK_BASE.png').convert('RGBA') # GMK photo from official renders
-        else: # default to SA profile
-            color = ImageColor.getrgb(self.color)
-            bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
-            if (bright > 0xB0):
-                base_num = '1'
-            elif (bright > 0x80):
-               base_num = '2'
-            elif (bright > 0x50):
-                base_num = '3'
-            elif (bright > 0x20):
-                base_num = '4'
-            else:
-                base_num = '5'
-            return Image.open('images/SA_{}{}.png'.format(row, base_num)).convert('RGBA') # All SA renders by CQ_Cumbers (me)
+        color = ImageColor.getrgb(self.color)
+        bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2]
+        if (bright > 0xB0):
+            base_num = '1'
+        elif (bright > 0x80):
+           base_num = '2'
+        elif (bright > 0x50):
+            base_num = '3'
+        elif (bright > 0x20):
+            base_num = '4'
+        else:
+            base_num = '5'
+
+        return Image.open('images/{}_{}{}.png'.format(profile, row, base_num)).convert('RGBA') # All renders by CQ_Cumbers (me)
 
     def get_base_color(self):
-        if self.profile.startswith(GMK_LABELS):
-            return 0xE0
+        color = ImageColor.getrgb(self.color)
+        bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2] # Perceptual gray
+        if (bright > 0xB0):
+            return 0xE0 # 224
+        elif (bright > 0x80):
+            return 0xB0 # 176
+        elif (bright > 0x50):
+            return 0x80 # 128
+        elif (bright > 0x20):
+            return 0x50 # 80,
         else:
-            color = ImageColor.getrgb(self.color)
-            bright = 0.3*color[0] + 0.59*color[1] + 0.11*color[2] # Perceptual gray
-            if (bright > 0xB0):
-                return 0xE0 # 224
-            elif (bright > 0x80):
-                return 0xB0 # 176
-            elif (bright > 0x50):
-                return 0x80 # 128
-            elif (bright > 0x20):
-                return 0x50 # 80,
-            else:
-                return 0x20 # 32
+            return 0x20 # 32
 
     def location(self, key_img): # get pixel location of key as (left, upper, right, lower)
         u = self.u
@@ -131,22 +129,22 @@ class Key(object):
         width, height = int(w*u)+1, int(h*u)+1 # Width & Height of image representing key
         key_img = Image.new('RGBA', (width, height)) # Lots of +1s to avoid unsightly gaps between keys
         key_img.paste(base_img, (0, 0, base_img.width, base_img.height))
-        if width > u:
-            center_part = base_img.crop((int(u/2), 0, int(u/2)+1, u)) # horizontal middle strip of image
+        if width > u+1:
+            center_part = base_img.crop((int(u/2), 0, int(u/2)+1, u)).filter(ImageFilter.GaussianBlur()) # horizontal middle strip of image, attempt to reduce stretch lines
             right_part = base_img.crop((int(u/2)+1, 0, u, u))
             for i in range(width - u + 1):
                 key_img.paste(center_part, (int(u/2) + i, 0, int(u/2) + i + 1, u))
             key_img.paste(right_part, (width - right_part.width, 0, width, u))
-        elif width < u:
+        elif width < u+1:
             right_part = base_img.crop((u-int(width/2), 0, u, u))
             key_img.paste(right_part, (width - right_part.width, 0, width, u))
-        if height > u:
-            middle_part = key_img.crop((0, int(u/2), width, int(u/2)+1)) # vertical middle strip of image
+        if height > u+1:
+            middle_part = key_img.crop((0, int(u/2), width, int(u/2)+1)).filter(ImageFilter.GaussianBlur()) # vertical middle strip of image, attempt to reduce stretch lines
             bottom_part = key_img.crop((0, int(u/2)+1, width, u))
             for i in range(height - u + 1):
                 key_img.paste(middle_part, (0, int(u/2) + i, key_img.width, int(u/2) + i + 1))
             key_img.paste(bottom_part, (0, height - bottom_part.height, width, height))
-        elif height < u:
+        elif height < u+1:
             bottom_part = key_img.crop((0, u-int(height/2), width, u))
             key_img.paste(bottom_part, (0, height - bottom_part.height, width, height))
         return key_img
@@ -203,7 +201,7 @@ class Key(object):
                 scale_factor = 6#9
                 min_size = 18#12
                 line_spacing = 12
-                width_limit = key_img.width - 60
+                width_limit = key_img.width - 78
             else:
                 offset = 12
                 scale_factor = 6
@@ -280,7 +278,7 @@ class Key(object):
         else:
             touch_surface = self.stretch_key(self.width, self.height)
             touch_surface = self.tint_key(touch_surface)
-            if self.stepped == True and height == self.height == self.height2 and not self.profile.startswith(GMK_LABELS): # handle most stepped keys (only for SA)
+            if self.stepped == True and height == self.height == self.height2: # handle most stepped keys (only for SA)
                 key_img.paste(touch_surface, (max(int(-x2*u), 0), max(int(-y2*u), 0)))
                 overlap = 60 # how many pixels of overlap
                 if x2 < 0: # for keys with left step
