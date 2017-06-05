@@ -51,10 +51,7 @@ class Key(object):
         full_profile = self.profile.split(' ') if len(full_profile) < 1 else full_profile
         row_profiles = ['SPACE', 'ISO', 'BIGENTER', 'STEP', 'BASE'] # row profile internally used to specify keys needing special base images
         profile = 'GMK' if full_profile[0] in GMK_LABELS else 'SA'
-        if profile == 'GMK':
-            row = full_profile[1] if len(full_profile) > 1 and full_profile[1] in ['SPACE', 'STEP', 'BASE'] else 'BASE'
-        else:
-            row = full_profile[1] if len(full_profile) > 1 and full_profile[1] in row_profiles else 'BASE'
+        row = full_profile[1] if len(full_profile) > 1 and full_profile[1] in row_profiles else 'BASE'
 
         if self.width >= 6.0 and self.height == 1.0: # Default make long, narrow keys spacebars
             row = 'SPACE'
@@ -285,7 +282,7 @@ class Key(object):
 
         special_cases = {(1.5, 1.0, 0.25, 0.0, 1.25, 2.0):'ISO', (1.25, 2.0, -0.25, 0.0, 1.5, 1.0):'ISO', (1.5, 2.0, -0.75, 1.0, 2.25, 1.0):'BIGENTER'} # special case oddly shaped keys
         identifiers = (self.width, self.height, x2, y2, self.width2, self.height2)
-        if identifiers in special_cases and not self.profile.startswith(GMK_LABELS): # handle special cases with second rectangle (only for SA)
+        if identifiers in special_cases: # handle special cases with second rectangle (only for SA)
             key_img = self.get_base_img(full_profile=[self.profile.split(' ')[0], special_cases[identifiers]])
             key_img = self.tint_key(key_img)
             text = self.text_key(Image.new('RGBA', (int(self.width*u), int(self.height*u))))
