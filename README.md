@@ -32,4 +32,4 @@ This tool can generate relatively realistic renders of arbitrary keyboard layout
 If you're looking for help with creating a keycap set for a group buy livingspeedbump has a nice [guide](https://www.keychatter.com/2015/10/10/how-to-create-a-keycap-set-for-a-group-buy/) on keychatter.
 
 ## Sample Image
-![Sample Render](http://raw.githubusercontent.com/CQCumbers/kle_render/master/render_output.png)
+![Sample Render](render_output.png)
