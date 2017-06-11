@@ -110,9 +110,9 @@ class Key(object):
         l1 = int(l1*256/100)
         a1 = int(a1+128) #a1 should be scaled by 128/100, but desaturation looks more natural
         b1 = int(b1+128)
-        l = ImageMath.eval('l2 - l3 + l1', l2=l, l3=self.base_color, l1=l1).convert('L')
-        a = ImageMath.eval('a2 - a2 + a1', a2=a, a1=a1, l2=l).convert('L')
-        b = ImageMath.eval('b2 - b2 + b1', b2=b, b1=b1, l2=l).convert('L')
+        l = ImageMath.eval('l + l1 - l2', l=l, l2=self.base_color, l1=l1).convert('L')
+        a = ImageMath.eval('a - a + a1', a=a, a1=a1).convert('L')
+        b = ImageMath.eval('b - b + b1', b=b, b1=b1).convert('L')
 
         key_img = Image.merge('LAB', (l, a, b))
         key_img = ImageCms.applyTransform(key_img, lab2rgb_transform)

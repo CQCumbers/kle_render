@@ -1,68 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <!-- Required meta tags -->
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-        <!-- Bootstrap CSS -->
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- Ladda CSS -->
+    <link rel="stylesheet" href="static/ladda-themeless.min.css">
 
-        <!-- Ladda CSS -->
-        <link rel="stylesheet" href="static/ladda-themeless.min.css">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="static/favicon-16x16.png">
+    <link rel="shortcut icon" href="static/favicon.ico">
 
-        <title>KLE-render</title>
-    </head>
-    <body>
-        <div class="container">
-            <br/>
-            <h1 class="display-4">KLE-Render</h1>
-            <p class="lead">Get prettier images of <a href="http://www.keyboard-layout-editor.com/">Keyboard Layout Editor</a> designs</p>
+    <title>KLE-render</title>
+  </head>
+  <body>
+    <div class="container">
+      <br/>
+      <h1 class="display-4"><img src="static/k.png" class="align-top" width="70" height="70"> KLE-Render</h1>
+      <p class="lead">Get prettier images of <a href="http://www.keyboard-layout-editor.com/">Keyboard Layout Editor</a> designs</p>
 
-            {% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    {% for message in messages %}
-                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                        <strong>Error!</strong> {{ message }}
-                    </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          {% for message in messages %}
+          <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <strong>Error!</strong> {{ message }}
+          </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
 
-            <div class="card card-outline-success">
-                <div class="card-block">
-                    <form action="" method="post" enctype="multipart/form-data">
-                        <div class="form-group">
-                            {{ form.url.label }}
-                            {{ form.url(class="form-control url", placeholder="keyboard-layout-editor.com/#/gists/...") }}
-                        </div>
-                        <div class="form-group">
-                            {{ form.json.label }}
-                            {{ form.json(class="form-control-file") }}
-                        </div>
-                        <p id="submitHelpBlock" class="form-text text-muted">
-                        <small>Please be patient - large layouts may take up to 30 seconds to render. Colors may not be accurate</small>
-                        </p>
-                        <button type="submit" class="btn btn-success ladda-button" data-style="expand-right" aria-describedby="submitHelpBlock"><span class="ladda-label">Render!</span><span class="ladda-spinner"></span></button>
-                    </form>
-                </div>
+      <div class="card card-outline-success">
+        <div class="card-block">
+          <form action="" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+              {{ form.url.label }}
+              <a href="http://imgur.com/a/0I3Sa" target="_blank"><i class="fa fa-question-circle"></i></a>
+              {{ form.url(class="form-control url", placeholder="keyboard-layout-editor.com/#/gists/...") }}
             </div>
-
-            <br/>
-            <p>You can also check out the <a href="/api/">API</a>, or the <a href="https://github.com/CQCumbers/kle_render">source code</a> on github</p>
+            <div class="form-group">
+              {{ form.json.label }}
+              <a href="http://imgur.com/a/qAmqB" target="_blank"><i class="fa fa-question-circle"></i></a>
+              {{ form.json(class="form-control-file") }}
+            </div>
+            <p id="submitHelpBlock" class="form-text text-muted">
+            <small>Please be patient - large layouts may take up to 30 seconds to render. Colors may not be accurate</small>
+            </p>
+            <button type="submit" class="btn btn-success ladda-button" data-style="expand-right" aria-describedby="submitHelpBlock"><span class="ladda-label">Render!</span><span class="ladda-spinner"></span></button>
+          </form>
         </div>
+      </div>
 
-        <!-- jQuery first, then Tether, then Bootstrap JS. -->
-        <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+      <nav class="navbar navbar-toggleable-sm">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="http://github.com/CQCumbers/kle_render#frequently-asked-questions">FAQ</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="http://www.reddit.com/r/MechanicalKeyboards/6cvk61">Reddit Post</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/api/">API Docs</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="http://github.com/CQCumbers/kle_render">Source Code</a>
+          </li>
+        </ul>
+        <span class="navbar-text">Made with <i class="fa fa-heart-o"></i> by <a href="http://github.com/CQCumbers">CQ_Cumbers</a></span>
+      </nav>
+    </div>
 
-        <!-- Ladda JS -->
-        <script src="static/spin.min.js"></script>
-        <script src="static/ladda.min.js"></script>
-        <script>Ladda.bind('.ladda-button');</script>
+    <!-- jQuery first, then Tether, then Bootstrap JS. -->
+    <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+    <!-- Ladda JS -->
+    <script src="static/spin.min.js"></script>
+    <script src="static/ladda.min.js"></script>
+    <script>Ladda.bind('.ladda-button');</script>
   </body>
 </html>
