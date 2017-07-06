@@ -186,19 +186,22 @@ class Key(object):
 
     def text_key(self, key_img):
         labels = self.labels
+        # res_multiplier = 4 # For outputting legend files
         if len(labels) <= 0:
             return key_img # if blank, exit immediately
         else:
+            margin = 45
+            # margin = margin * res_multiplier # For outputting legend files
             if self.decal:
-                offset = 0  # pixels to shift text upwards to center it in keycap top
-                scale_factor = 6#7 # multiply this by the legend size and add to min_size to get font size for that legend
-                min_size = 18#14
+                offset = 0 # pixels to shift text upwards to center it in keycap top
+                scale_factor = 6 # multiply this by the legend size and add to min_size to get font size for that legend
+                min_size = 18
                 line_spacing = 16 # space between lines (only matters for <= 2 labels)
                 width_limit = key_img.width # maximum line width in pixels before automatic line break (Only matters for 1 label)
             elif self.profile.startswith(GMK_LABELS):
                 offset = 12
-                scale_factor = 6#9
-                min_size = 18#12
+                scale_factor = 6
+                min_size = 18
                 line_spacing = 12
                 width_limit = key_img.width - 78
             else:
@@ -209,7 +212,14 @@ class Key(object):
                 width_limit = key_img.width - 64
                 labels = [labels[i].upper() for i in range(len(labels))] # Only uppercase legends on SA keycaps
 
+            # offset = offset * res_multiplier # For outputting legend files
+            # scale_factor = scale_factor * res_multiplier # For outputting legend files
+            # min_size = min_size * res_multiplier # For outputting legend files
+            # line_spacing = line_spacing * res_multiplier # For outputting legend files
+            # width_limit = width_limit * res_multiplier # For outputting legend files
             font = ImageFont.truetype(self.font_path(), int(self.font_size*scale_factor)+min_size)
+            # old_key_img = key_img # For outputting legend files
+            # key_img = Image.new('RGBA', (key_img.width*res_multiplier,key_img.height*res_multiplier)) # For outputting legend files
             draw = ImageDraw.Draw(key_img)
 
             if self.align == -1: # if not explicitly aligned
@@ -240,23 +250,23 @@ class Key(object):
                     c = ImageColor.getrgb(self.font_color[i] if i < len(self.font_color) and len(self.font_color[i]) > 0 else self.font_color[0]) # color defaults to first if unspecified
                     c = tuple(band + 0x26 for band in c) # Simulates reflectivity 
                     if i == align[0]:
-                        draw.multiline_text((45, 45-offset), text, font=font, fill=c, spacing=line_spacing, align='left')
+                        draw.multiline_text((margin, margin-offset), text, font=font, fill=c, spacing=line_spacing, align='left')
                     elif i == align[6]:
-                       draw.multiline_text((45, key_img.height-45-h-offset), text, font=font, fill=c, spacing=line_spacing, align='center')
+                       draw.multiline_text((margin, key_img.height-margin-h-offset), text, font=font, fill=c, spacing=line_spacing, align='center')
                     elif i == align[2]:
-                        draw.multiline_text((key_img.width-45-w, 45-offset), text, font=font, fill=c, spacing=line_spacing, align='right')
+                        draw.multiline_text((key_img.width-margin-w, margin-offset), text, font=font, fill=c, spacing=line_spacing, align='right')
                     elif i == align[8]:
-                        draw.multiline_text((key_img.width-45-w, key_img.height-45-h-offset), text, font=font, fill=c, spacing=line_spacing, align='left')
+                        draw.multiline_text((key_img.width-margin-w, key_img.height-margin-h-offset), text, font=font, fill=c, spacing=line_spacing, align='left')
                     elif i == align[3]:
-                        draw.multiline_text((45, (key_img.height-h)/2-offset), text, font=font, fill=c, spacing=line_spacing, align='center')
+                        draw.multiline_text((margin, (key_img.height-h)/2-offset), text, font=font, fill=c, spacing=line_spacing, align='center')
                     elif i == align[5]:
-                        draw.multiline_text((key_img.width-45-w, (key_img.height-h)/2-offset), text, font=font, fill=c, spacing=line_spacing, align='right')
+                        draw.multiline_text((key_img.width-margin-w, (key_img.height-h)/2-offset), text, font=font, fill=c, spacing=line_spacing, align='right')
                     elif i == align[1]:
-                        draw.multiline_text(((key_img.width-w)/2, 45-offset), text, font=font, fill=c, spacing=line_spacing, align='left')
+                        draw.multiline_text(((key_img.width-w)/2, margin-offset), text, font=font, fill=c, spacing=line_spacing, align='left')
                     elif i == align[4]:
                         draw.multiline_text(((key_img.width-w)/2, (key_img.height-h)/2-offset), text, font=font, fill=c, spacing=line_spacing, align='center')
                     elif i == align[7]:
-                        draw.multiline_text(((key_img.width-w)/2, key_img.height-45-h-offset), text, font=font, fill=c, spacing=line_spacing, align='right')
+                        draw.multiline_text(((key_img.width-w)/2, key_img.height-margin-h-offset), text, font=font, fill=c, spacing=line_spacing, align='right')
                     elif i == align[9] or i == align[10] or i == align[11]:
                         font2 = ImageFont.truetype(self.font_path(), int(3.0*scale_factor)+min_size) # front printed legends are apparently always size 3
                         text = self.break_text(labels[i], font2, width_limit)
@@ -271,7 +281,9 @@ class Key(object):
                             draw2.multiline_text((key_img.width-45-w, 0), text, font=font2, fill=c, spacing=line_spacing, align='right')
                         front_plane = front_plane.resize((key_img.width, 40))
                         key_img.paste(front_plane, (0, key_img.height-front_plane.height), mask=front_plane)
+            # key_img.save('SP_Legends/{}.png'.format('_'.join(labels).replace(' ','_').replace('/','')), 'PNG') # For outputting legend files
             return key_img
+            # return old_key_img # For outputting legend files
 
     def extend(self):
         x2, y2 = self.x2, self.y2

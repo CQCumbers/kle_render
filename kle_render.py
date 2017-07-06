@@ -77,8 +77,9 @@ def html_to_unicode(html): # unescaped html input
 
     result = pattern.sub(lambda x: chr(int(d[x.group()[13:-6]], 16)), html)
     result = pattern2.sub(lambda x: chr(int(d2[x.group()[16:-6]], 16)), result)
-    result = result.replace('<br>', '\n').replace('<br/>', '\n')
-    return re.sub(cleanr, '', result)
+    result = result.replace('<br>', '\n').replace('<br/>', '\n').replace('','') # last one is a unicode control char
+    result = re.sub(cleanr, '', result)
+    return result
 
 def deserialise(rows): # where rows is a dictionary version of Keyboard Layout Editor's JSON Output
     # Initialize with defaults
