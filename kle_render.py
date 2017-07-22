@@ -24,8 +24,9 @@ def render_keyboard(data):
         scale = 4
     else:
         scale = 5
+    # scale = 1
     s = (160 * 0.97**len(keys) + 40 + 2*border)*len(keys)
-    keyboard = Image.new('RGBA', (int(round(s/scale)),int(round(s/scale))), color=c)
+    keyboard = Image.new('RGB', (int(round(s/scale)),int(round(s/scale))), color=c)
     max_x = max_y = 0
 
     pool = ThreadPool(16) # hopefully avoid running out of threads on heroku
@@ -43,10 +44,12 @@ def render_key(key):
     global max_x, max_y
     key_img = key.render()
     location = [int((coord+border)/scale) for coord in key.location(key_img)]
+    paste_img = Image.new('RGBA', tuple([int(i/scale+2)*scale for i in key_img.size]))
+    paste_img.paste(key_img, tuple([coord % scale for coord in key.location(key_img)[:2]]), mask=key_img)
     max_x = max(location[2], max_x)
     max_y = max(location[3], max_y)
-    key_img = key_img.resize(tuple([int(i/scale)+1 for i in key_img.size]), resample=Image.ANTIALIAS)
-    keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
+    paste_img = paste_img.resize(tuple([int(i/scale) for i in paste_img.size]), resample=Image.LANCZOS)
+    keyboard.paste(paste_img, (location[0], location[1]), mask=paste_img)
 
 def watermark(img):
     global max_x, max_y

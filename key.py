@@ -339,7 +339,7 @@ class Key(object):
             key_img = self.tint_key(key_img)
             key_img = self.text_key(key_img)
 
-        if self.rotation_angle != 0:
-            key_img = key_img.resize(tuple(i+2 for i in key_img.size))
-            key_img = key_img.rotate(-self.rotation_angle, resample=Image.BICUBIC, expand=1)
+        #if self.rotation_angle != 0:
+        key_img = key_img.resize(tuple(i+2 for i in key_img.size))
+        key_img = key_img.rotate(-self.rotation_angle, resample=Image.BICUBIC, expand=1)
         return key_img
