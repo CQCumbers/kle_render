@@ -43,9 +43,9 @@ class Key(object):
 
     def font_path(self):
         if self.profile.startswith(GMK_LABELS):
-            return 'CherryRounded.otf'
+            return 'GMK_font.ttf'
         else:
-            return 'NotoRounded.otf'
+            return 'SA_font.ttf'
 
     def get_base_img(self, full_profile=[]):
         full_profile = self.profile.split(' ') if len(full_profile) < 1 else full_profile
@@ -154,9 +154,9 @@ class Key(object):
         line_spacing = 16
         labels = [text.upper() for text in self.labels] # only uppercase text on SA
 
-        gotham = ImageFont.truetype(self.font_path(), int(self.font_size*scale_factor)+min_size)
-        w = max([gotham.getsize(text)[0] for text in labels]) # max of widths
-        h = sum([gotham.getsize(text)[1] for text in labels]) # sum of heights
+        font = ImageFont.truetype(self.font_path(), int(self.font_size*scale_factor)+min_size)
+        w = max([font.getsize(text)[0] for text in labels]) # max of widths
+        h = sum([font.getsize(text)[1] for text in labels]) # sum of heights
         h += line_spacing*(len([text for text in labels if len(text) > 0]))
 
         key_img = Image.new('RGBA', (w+64, h+108))

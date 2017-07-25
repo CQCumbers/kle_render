@@ -24,7 +24,6 @@ def render_keyboard(data):
         scale = 4
     else:
         scale = 5
-    # scale = 1
     s = (160 * 0.97**len(keys) + 40 + 2*border)*len(keys)
     keyboard = Image.new('RGB', (int(round(s/scale)),int(round(s/scale))), color=c)
     max_x = max_y = 0
@@ -59,7 +58,7 @@ def watermark(img):
     c2 = ImageColor.getrgb('#E0E0E0')
 
     draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype('NotoRounded.otf', 12)
+    font = ImageFont.truetype('SA_font.ttf', 12)
     w, h = font.getsize(text)
     max_x = max(int(w/scale), max_x)
     max_y += h + 2*margin
