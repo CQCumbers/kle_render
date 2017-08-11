@@ -30,8 +30,7 @@ class Key(object):
         self.font_color = ['#000000']
         self.labels =[]
         self.align = -1
-        self.font_size = 3.0
-        self.font_size2 = 3.0
+        self.font_size = [3.0] * 9
         self.rotation_angle = 0.0
         self.rotation_x = 0.0
         self.rotation_y = 0.0
@@ -154,7 +153,7 @@ class Key(object):
         line_spacing = 16
         labels = [text.upper() for text in self.labels] # only uppercase text on SA
 
-        font = ImageFont.truetype(self.font_path(), int(self.font_size*scale_factor)+min_size)
+        font = ImageFont.truetype(self.font_path(), int(max(self.font_size)*scale_factor)+min_size)
         w = max([font.getsize(text)[0] for text in labels]) # max of widths
         h = sum([font.getsize(text)[1] for text in labels]) # sum of heights
         h += line_spacing*(len([text for text in labels if len(text) > 0]))
@@ -186,12 +185,10 @@ class Key(object):
 
     def text_key(self, key_img):
         labels = self.labels
-        # res_multiplier = 4 # For outputting legend files
         if len(labels) <= 0:
             return key_img # if blank, exit immediately
         else:
             margin = 45
-            # margin = margin * res_multiplier # For outputting legend files
             if self.decal:
                 offset = 0 # pixels to shift text upwards to center it in keycap top
                 scale_factor = 6 # multiply this by the legend size and add to min_size to get font size for that legend
@@ -212,14 +209,6 @@ class Key(object):
                 width_limit = key_img.width - 64
                 labels = [labels[i].upper() for i in range(len(labels))] # Only uppercase legends on SA keycaps
 
-            # offset = offset * res_multiplier # For outputting legend files
-            # scale_factor = scale_factor * res_multiplier # For outputting legend files
-            # min_size = min_size * res_multiplier # For outputting legend files
-            # line_spacing = line_spacing * res_multiplier # For outputting legend files
-            # width_limit = width_limit * res_multiplier # For outputting legend files
-            font = ImageFont.truetype(self.font_path(), int(self.font_size*scale_factor)+min_size)
-            # old_key_img = key_img # For outputting legend files
-            # key_img = Image.new('RGBA', (key_img.width*res_multiplier,key_img.height*res_multiplier)) # For outputting legend files
             draw = ImageDraw.Draw(key_img)
 
             if self.align == -1: # if not explicitly aligned
@@ -245,6 +234,7 @@ class Key(object):
 
             for i in range(len(labels)):
                 if labels[i].strip(): # ignores empty and whitespace only strings
+                    font = ImageFont.truetype(self.font_path(), int((self.font_size[i] if i not in align[9:] else 3.0)*scale_factor)+min_size)
                     text = self.break_text(labels[i], font, width_limit)
                     w, h = self.text_size(text, font, line_spacing)
                     c = ImageColor.getrgb(self.font_color[i] if i < len(self.font_color) and len(self.font_color[i]) > 0 else self.font_color[0]) # color defaults to first if unspecified
@@ -267,23 +257,18 @@ class Key(object):
                         draw.multiline_text(((key_img.width-w)/2, (key_img.height-h)/2-offset), text, font=font, fill=c, spacing=line_spacing, align='center')
                     elif i == align[7]:
                         draw.multiline_text(((key_img.width-w)/2, key_img.height-margin-h-offset), text, font=font, fill=c, spacing=line_spacing, align='right')
-                    elif i == align[9] or i == align[10] or i == align[11]:
-                        font2 = ImageFont.truetype(self.font_path(), int(3.0*scale_factor)+min_size) # front printed legends are apparently always size 3
-                        text = self.break_text(labels[i], font2, width_limit)
-                        w, h = self.text_size(text, font2, line_spacing)
+                    elif i in align[9:]:
                         front_plane = Image.new('RGBA', (key_img.width, 40*2))
                         draw2 = ImageDraw.Draw(front_plane)
                         if i == align[9]:
-                            draw2.multiline_text((45, 0), text, font=font2, fill=c, spacing=line_spacing, align='left')
+                            draw2.multiline_text((45, 0), text, font=font, fill=c, spacing=line_spacing, align='left')
                         elif i == align[10]:
-                            draw2.multiline_text(((key_img.width-w)/2, 0), text, font=font2, fill=c, spacing=line_spacing, align='center')
+                            draw2.multiline_text(((key_img.width-w)/2, 0), text, font=font, fill=c, spacing=line_spacing, align='center')
                         else:
-                            draw2.multiline_text((key_img.width-45-w, 0), text, font=font2, fill=c, spacing=line_spacing, align='right')
+                            draw2.multiline_text((key_img.width-45-w, 0), text, font=font, fill=c, spacing=line_spacing, align='right')
                         front_plane = front_plane.resize((key_img.width, 40))
                         key_img.paste(front_plane, (0, key_img.height-front_plane.height), mask=front_plane)
-            # key_img.save('SP_Legends/{}.png'.format('_'.join(labels).replace(' ','_').replace('/','')), 'PNG') # For outputting legend files
             return key_img
-            # return old_key_img # For outputting legend files
 
     def extend(self):
         x2, y2 = self.x2, self.y2
@@ -339,7 +324,6 @@ class Key(object):
             key_img = self.tint_key(key_img)
             key_img = self.text_key(key_img)
 
-        #if self.rotation_angle != 0:
         key_img = key_img.resize(tuple(i+2 for i in key_img.size))
         key_img = key_img.rotate(-self.rotation_angle, resample=Image.BICUBIC, expand=1)
         return key_img
