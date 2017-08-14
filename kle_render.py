@@ -86,10 +86,10 @@ def html_to_unicode(html): # unescaped html input
 def deserialise(rows): # where rows is a dictionary version of Keyboard Layout Editor's JSON Output
     # Initialize with defaults
     current = Key()
+    default_font_size = current.font_size[0]
     meta = { 'backcolor': '#eeeeee' }
     keys = []
     color_format = re.compile(r'#[a-fA-F0-9]{3}(?:[a-fA-F0-9]{3})?$')
-    old_font_size = []
 
     for row in rows:
         if isinstance(row, list):
@@ -116,11 +116,12 @@ def deserialise(rows): # where rows is a dictionary version of Keyboard Layout E
                     if 'a' in key:
                         current.align = int(key['a'])
                     if 'f' in key:
-                        current.font_size = [float(key['f'])] * 9
+                        default_font_size = float(key['f'])
+                        current.font_size = [default_font_size] * 9
                     if 'f2' in key:
                         current.font_size = [float(key['f2'])] * 9
                     if 'fa' in key:
-                        current.font_size = [float(key['fa'][i]) if i < len(key['fa']) and key['fa'][i] > 0 else current.font_size[i] for i in range(9)]
+                        current.font_size = [float(key['fa'][i]) if i < len(key['fa']) and key['fa'][i] > 0 else default_font_size for i in range(9)]
                     if 'p' in key:
                         current.profile = key['p']
                     if 'c' in key:

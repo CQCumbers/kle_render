@@ -28,9 +28,9 @@ class Key(object):
         self.height2 = 0.0
         self.color = '#EEEEEE'
         self.font_color = ['#000000']
+        self.font_size = [3.0] * 9
         self.labels =[]
         self.align = -1
-        self.font_size = [3.0] * 9
         self.rotation_angle = 0.0
         self.rotation_x = 0.0
         self.rotation_y = 0.0
