@@ -1,5 +1,5 @@
 #!bin/python
-from flask import Flask, Blueprint, redirect, send_file, render_template, flash
+from flask import Flask, Blueprint, redirect, send_file, render_template, flash, Markup
 from flask_restplus import Api, Resource, fields
 
 from flask_cors import CORS, cross_origin
@@ -72,15 +72,20 @@ def index():
     form = InputForm()
     if form.validate_on_submit():
         if len(form.url.data) > 0:
-            if 'keyboard-layout-editor.com/#/gists/' in form.url.data:
+            if ('keyboard-layout-editor.com/#/gists/' in form.url.data
+                and requests.get('https://api.github.com/gists/'+form.url.data.split('gists/', 1)[1]).status_code < 400):
                 return redirect('/api/'+form.url.data.split('gists/', 1)[1])
             else:
-                flash("Not a valid Keyboard Layout Editor Gist")
+                flash('Not a valid Keyboard Layout Editor gist')
         elif form.json.data != None:
-            str_data = form.json.data.read().decode('utf-8')
-            data = kle_render.deserialise(json.loads(str_data))
-            img = kle_render.render_keyboard(data)
-            return serve_pil_image(img)
+            try:
+                str_data = form.json.data.read().decode('utf-8')
+                data = kle_render.deserialise(json.loads(str_data))
+            except ValueError: # if json or string decoding fails
+                flash(Markup('Invalid JSON input - make sure to <a target="_blank" href="http://imgur.com/a/qAmqB">download strict JSON</a>'))
+            else:
+                img = kle_render.render_keyboard(data)
+                return serve_pil_image(img)
     flash_errors(form)
     return render_template('index.html', form=form)
 
