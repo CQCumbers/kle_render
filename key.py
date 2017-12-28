@@ -42,9 +42,9 @@ class Key(object):
 
     def font_path(self):
         if self.profile.startswith(GMK_LABELS):
-            return 'GMK_font.ttf'
+            return 'fonts/GMK_font.ttf'
         else:
-            return 'SA_font.ttf'
+            return 'fonts/SA_font.ttf'
 
     def get_base_img(self, full_profile=[]):
         full_profile = self.profile.split(' ') if len(full_profile) < 1 else full_profile

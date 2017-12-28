@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <!-- Required meta tags -->
@@ -6,9 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
     <!-- Ladda CSS -->
     <link rel="stylesheet" href="static/ladda-themeless.min.css">
 
@@ -20,10 +18,9 @@
     <title>KLE-render</title>
   </head>
   <body>
-    <div class="container">
-      <br/>
-      <h1 class="display-4"><img src="static/k.png" class="align-top" width="70" height="70"> KLE-Render</h1>
-      <p class="lead">Get prettier images of <a href="http://www.keyboard-layout-editor.com/">Keyboard Layout Editor</a> designs<br/>Try <a href="http://www.kbrenders.com">kbrenders.com</a> for photorealistic next-day keycap set renders</p>
+    <div class="container px-5 pt-4">
+      <h1 class="display-4"><img src="static/k.png" class="align-top" height="70"> <strong>KLE-Render</strong></h1>
+      <p class="lead">Get prettier images of <a href="http://www.keyboard-layout-editor.com/">Keyboard Layout Editor</a> designs</p>
 
       {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -35,57 +32,85 @@
             <strong>Error!</strong> {{ message }}
           </div>
           {% endfor %}
+        {% else %}
+        <div class="alert alert-primary alert-dismissible fade show" role="alert">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          Try <a class="alert-link" href="http://kbrenders.com">kbrenders.com</a> for photorealistic next-day keycap set renders!
+        </div>
         {% endif %}
       {% endwith %}
 
-      <div class="card card-outline-success">
-        <div class="card-block">
+
+      <div class="card bg-light my-2">
+        <div class="card-body">
           <form action="" method="post" enctype="multipart/form-data">
             <div class="form-group">
               {{ form.url.label }}
-              <a href="http://imgur.com/a/0I3Sa" target="_blank"><i class="fa fa-question-circle"></i></a>
+              <a class="small align-text-bottom" href="http://imgur.com/a/0I3Sa" target="_blank">
+                <i class="far fa-question-circle"></i>
+              </a>
               {{ form.url(class="form-control url", placeholder="keyboard-layout-editor.com/#/gists/...") }}
             </div>
             <div class="form-group">
               {{ form.json.label }}
-              <a href="http://imgur.com/a/qAmqB" target="_blank"><i class="fa fa-question-circle"></i></a>
-              {{ form.json(class="form-control-file") }}
+              <a class="small align-text-bottom" href="http://imgur.com/a/qAmqB" target="_blank">
+                <i class="far fa-question-circle"></i>
+              </a>
+              <label class="custom-file w-100">
+                {{ form.json(class="custom-file-input") }}
+                <span class="custom-file-control"></span>
+              </label>
             </div>
             <p id="submitHelpBlock" class="form-text text-muted">
-            <small>Please be patient - large layouts may take up to 30 seconds to render. Colors may not be accurate</small>
             </p>
-            <button type="submit" class="btn btn-success ladda-button" data-style="expand-right" aria-describedby="submitHelpBlock"><span class="ladda-label">Render!</span><span class="ladda-spinner"></span></button>
+            <button type="submit" class="btn btn-primary ladda-button mt-2" data-style="expand-right" aria-describedby="submitHelpBlock"><span class="ladda-label">Render!</span><span class="ladda-spinner"></span></button>
           </form>
         </div>
       </div>
 
-      <nav class="navbar navbar-toggleable-sm">
-        <ul class="navbar-nav mr-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="http://github.com/CQCumbers/kle_render#frequently-asked-questions">FAQ</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="http://www.reddit.com/r/MechanicalKeyboards/6cvk61">Reddit Post</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/api/">API Docs</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="http://github.com/CQCumbers/kle_render">Source Code</a>
-          </li>
-        </ul>
-        <span class="navbar-text">Made with <i class="fa fa-heart-o"></i> by <a href="http://github.com/CQCumbers">CQ_Cumbers</a></span>
+      <nav class="navbar navbar-expand-md navbar-light p-0">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#links">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="links">
+          <ul class="navbar-nav mr-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="http://github.com/CQCumbers/kle_render#frequently-asked-questions">FAQ</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="http://www.reddit.com/r/MechanicalKeyboards/6cvk61">Reddit Post</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/api/">API Docs</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="http://github.com/CQCumbers/kle_render">Source Code</a>
+            </li>
+          </ul>
+        </div>
+
+        <span class="navbar-text">Created by <a href="http://github.com/CQCumbers">CQCumbers</a></span>
       </nav>
-    </div>
 
-    <!-- jQuery first, then Tether, then Bootstrap JS. -->
-    <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
-
+    <!-- jQuery, Popper, and Bootstrap JS. -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <script src="https://use.fontawesome.com/releases/v5.0.2/js/all.js"></script>
     <!-- Ladda JS -->
     <script src="static/spin.min.js"></script>
     <script src="static/ladda.min.js"></script>
     <script>Ladda.bind('.ladda-button');</script>
+    <!-- File Input -->
+    <script>
+      $('.custom-file-input').on('change', function() {
+        let fileName = $(this).val().split('\\').pop();
+        $(this).next('.custom-file-control').addClass("selected").html(fileName);
+      });
+    </script>
   </body>
 </html>
