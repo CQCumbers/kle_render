@@ -82,7 +82,7 @@ def index():
                 str_data = form.json.data.read().decode('utf-8')
                 data = kle_render.deserialise(json.loads(str_data))
             except ValueError: # if json or string decoding fails
-                flash(Markup('Invalid JSON input - make sure to <a target="_blank" href="http://imgur.com/a/qAmqB">download strict JSON</a>'))
+                flash(Markup('Invalid JSON input - make sure to <a class="alert-link" target="_blank" href="http://imgur.com/a/qAmqB">download strict JSON</a>'))
             else:
                 img = kle_render.render_keyboard(data)
                 return serve_pil_image(img)
