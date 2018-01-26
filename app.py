@@ -72,11 +72,10 @@ def index():
     form = InputForm()
     if form.validate_on_submit():
         if len(form.url.data) > 0:
-            if ('keyboard-layout-editor.com/#/gists/' in form.url.data
-                and requests.get('https://api.github.com/gists/'+form.url.data.split('gists/', 1)[1]).status_code < 400):
+            if ('keyboard-layout-editor.com/#/gists/' in form.url.data):
                 return redirect('/api/'+form.url.data.split('gists/', 1)[1])
             else:
-                flash('Not a valid Keyboard Layout Editor gist')
+                flash('Not a Keyboard Layout Editor gist')
         elif form.json.data != None:
             try:
                 str_data = form.json.data.read().decode('utf-8')
