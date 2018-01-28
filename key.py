@@ -189,22 +189,18 @@ class Key(object):
             return key_img # if blank, exit immediately
         else:
             margin = 45
+            scale_factor = 6 # multiply this by the legend size and add to min_size to get font size for that legend
+            min_size = 18
             if self.decal:
                 offset = 0 # pixels to shift text upwards to center it in keycap top
-                scale_factor = 6 # multiply this by the legend size and add to min_size to get font size for that legend
-                min_size = 18
                 line_spacing = 16 # space between lines (only matters for <= 2 labels)
                 width_limit = key_img.width # maximum line width in pixels before automatic line break (Only matters for 1 label)
             elif self.profile.startswith(GMK_LABELS):
-                offset = 12
-                scale_factor = 6
-                min_size = 18
+                offset = 18
                 line_spacing = 12
                 width_limit = key_img.width - 78
             else:
-                offset = 12
-                scale_factor = 6
-                min_size = 18
+                offset = 14
                 line_spacing = 16
                 width_limit = key_img.width - 64
                 labels = [labels[i].upper() for i in range(len(labels))] # Only uppercase legends on SA keycaps
