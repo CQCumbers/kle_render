@@ -1,70 +1,67 @@
 #!bin/python
+import json, github, io, flask_wtf, flask_wtf.file, wtforms, flask_cors
 from flask import Flask, Blueprint, redirect, send_file, render_template, flash, Markup
 from flask_restplus import Api, Resource, fields
+from kle_render import Keyboard_Render
 
-from flask_cors import CORS, cross_origin
-from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField
-
-from github import Github
-from io import BytesIO
-import requests, json
-
-import kle_render
 
 app = Flask(__name__)
 app.config.from_object('config')
-CORS(app)
+flask_cors.CORS(app)
 api_blueprint = Blueprint('api', __name__, url_prefix='/api')
-api = Api(api_blueprint, version='1.0', title='KLE-Render API', description='Get prettier images of Keyboard Layout Editor designs')
+api = Api(
+    api_blueprint, version='1.0', title='KLE-Render API',
+    description='Get prettier images of Keyboard Layout Editor designs'
+)
 parser = api.parser()
-
 post = parser.copy()
 post.add_argument(
-        "data",
-        required=True,
-        location="json",
-        help="Downloaded JSON (strict) from Raw Data tab of Keyboard Layout Editor"
+    'data', required=True, location='json',
+    help='Downloaded JSON (strict) from Raw Data tab of Keyboard Layout Editor'
 )
+app.register_blueprint(api_blueprint)
+
 
 def serve_pil_image(pil_img):
-    img_io = BytesIO()
+    img_io = io.BytesIO()
     pil_img.save(img_io, 'PNG')
     img_io.seek(0)
     return send_file(img_io, mimetype='image/png')
+
 
 @api.route('/<id>', endpoint='from_gist')
 @api.doc(params={'id': 'Copy from keyboard-layout-editor.com/#/gists/<id>'})
 class FromGist(Resource):
     def get(self, id):
-        token = app.config['API_TOKEN']
-        g = Github(token) # authenticate to avoid rate limits
-        content = json.loads([value for key, value in g.get_gist(id).files.items() if key.endswith('.kbd.json')][0].content)
-        data = kle_render.deserialise(content)
-        img = kle_render.render_keyboard(data)
+        # authenticate with Github to avoid rate limits
+        g = github.Github(app.config['API_TOKEN'])  
+        content = json.loads([v for k, v in g.get_gist(id).files.items() if k.endswith('.kbd.json')][0].content)
+        img = Keyboard_Render(content).render()
         return serve_pil_image(img)
+
 
 @api.route('/', endpoint='from_json')
 @api.expect(post)
 class FromJSON(Resource):
     def post(self):
-        data = kle_render.deserialise(json.loads(api.payload))
-        img = kle_render.render_keyboard(data)
+        content = json.loads(api.payload)
+        img = Keyboard_Render(content).render()
         return serve_pil_image(img)
 
-app.register_blueprint(api_blueprint)
 
 
+class InputForm(flask_wtf.FlaskForm):
+    url = wtforms.StringField('Copy the URL of a saved layout:')
+    json = flask_wtf.file.FileField(
+        'Or upload raw JSON:', validators=[flask_wtf.file.FileAllowed(['json'], 'Upload must be JSON')]
+    )
 
-class InputForm(FlaskForm):
-    url = StringField('Copy the URL of a saved layout:')
-    json = FileField('Or upload raw JSON:', validators=[FileAllowed(['json'], 'Upload must be JSON')])
 
 def flash_errors(form):
     for field, errors in form.errors.items():
         for error in errors:
             flash(error)
+
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
@@ -74,19 +71,17 @@ def index():
         if len(form.url.data) > 0:
             if ('keyboard-layout-editor.com/#/gists/' in form.url.data):
                 return redirect('/api/'+form.url.data.split('gists/', 1)[1])
-            else:
-                flash('Not a Keyboard Layout Editor gist')
-        elif form.json.data != None:
-            try:
-                str_data = form.json.data.read().decode('utf-8')
-                data = kle_render.deserialise(json.loads(str_data))
-            except ValueError: # if json or string decoding fails
-                flash(Markup('Invalid JSON input - make sure to <a class="alert-link" target="_blank" href="http://imgur.com/a/qAmqB">download strict JSON</a>'))
-            else:
-                img = kle_render.render_keyboard(data)
-                return serve_pil_image(img)
+            flash('Not a Keyboard Layout Editor gist')
+        elif form.json.data:
+            #try:
+            content = json.loads(form.json.data.read().decode('utf-8'))
+            img = Keyboard_Render(content).render()
+            return serve_pil_image(img)
+            #except ValueError:
+            #    flash(Markup('Invalid JSON input - see (?) for help'))
     flash_errors(form)
     return render_template('index.html', form=form)
 
+
 if __name__ == '__main__':
-    app.run(debug=True) # Use debug=False on actual server
+    app.run(debug=True)
