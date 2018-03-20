@@ -1,6 +1,6 @@
 import copy, html, lxml.html, re, json, functools
+from multiprocessing.dummy import Lock, Pool
 from PIL import Image, ImageColor, ImageDraw, ImageFont
-from multiprocessing.dummy import Pool as ThreadPool
 from key import Key
 
 
@@ -15,35 +15,24 @@ class Keyboard_Render:
 
     def render(self):
         # choose size and scale of canvas depending on number of keys
-        keys = self.data['keys']
-        c = ImageColor.getrgb(self.data['meta']['backcolor'])
-        if len(keys) < 25:
-            scale = 2
-        elif len(keys) < 200:
-            scale = 3
-        elif len(keys) < 540:
-            scale = 4
-        else:
-            scale = 5
-        border = 24
-        s = (160 * 0.97**len(keys) + 40 + 2 * border) * len(keys)
-        self.keyboard = Image.new('RGB', (int(round(s / scale)), int(round(s / scale))), color=c)
+        keys, c = self.data['keys'], ImageColor.getrgb(self.data['meta']['backcolor'])
+        scale, border = min(int(len(keys) / 100 + 1), 5), 24
+        side_len = int((200 * len(keys) + 2 * border) / scale)
+        self.keyboard = Image.new('RGB', (side_len, side_len), color=c)
         self.max_size = (0, 0)
 
         # render each key using multiprocessing
-        pool = ThreadPool(16)
-        pool.map(functools.partial(self.render_key, scale=scale, border=border), keys)
-        pool.close()
-        pool.join()
+        pool, lock = Pool(16), Lock()
+        pool.map(functools.partial(self.render_key, scale, border, lock), keys)
 
         # watermark and crop the image
-        self.max_size = [size + int(round(border / scale)) for size in self.max_size]
-        self.watermark_keyboard('Made with kle-render.herokuapp.com', scale=scale)
+        self.max_size = [size + int(border / scale) for size in self.max_size]
+        self.watermark_keyboard('Made with kle-render.herokuapp.com', scale)
         self.keyboard = self.keyboard.crop((0, 0, self.max_size[0], self.max_size[1]))
         return self.keyboard
 
 
-    def render_key(self, key, scale=2, border=0):
+    def render_key(self, scale, border, lock, key):
         # render key and scale resulting image for subpixel accuracy
         key_img = key.render()
         scaled_img = Image.new('RGBA', tuple(int(i / scale + 2) * scale for i in key_img.size))
@@ -53,10 +42,21 @@ class Keyboard_Render:
         # paste in proper location and update max_size
         location = [int((coord + border) / scale) for coord in key.get_location(key_img)]
         self.max_size = [max(location[2], self.max_size[0]), max(location[3], self.max_size[1])]
+        self.expand_keyboard(scale, lock)
         self.keyboard.paste(scaled_img, (location[0], location[1]), mask=scaled_img)
 
 
-    def watermark_keyboard(self, text, scale=2):
+    def expand_keyboard(self, scale, lock):
+        if all(self.max_size[i] < self.keyboard.size[i] for i in range(2)): return
+        with lock:
+            c = ImageColor.getrgb(self.data['meta']['backcolor'])
+            new_size = tuple(int(size + 1000 / scale) for size in self.max_size)
+            new_keyboard = Image.new('RGB', new_size, color=c)
+            new_keyboard.paste(self.keyboard, (0, 0))
+            self.keyboard = new_keyboard
+
+
+    def watermark_keyboard(self, text, scale):
         # config margin size and watermark colors
         margin = 5
         background_color = ImageColor.getrgb('#202020')
