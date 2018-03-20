@@ -16,9 +16,6 @@ KLE-Render technically only supports SA and GMK keycap profiles, but most layout
 ### Why am I getting an internal server error when I try to render a layout?
 It's quite possible the server is overloaded, but also possible that something in your layout is causing the server to crash. If you're uploading JSON, make sure it is downloaded via the button. If as far as you can tell everything is inputted correctly, please contact me with the gist link or JSON that is causing the error and I will try to fix the problem.
 
-### Why are the edges cut off on my image?
-To save time, the program guesses a reasonable initial image size given the number of keys in the layout, then crops it to size after rendering all of the keys. For certain narrow layouts, the initial guess may be too small in one dimension, causing the final image to be cut off. I will try to fix this issue when possible, but for now try adding extra keys to make the layout more square, then cropping the render afterwards.
-
 ### Can I render from a different angle? What if I need to render with a case, or rare profiles, or translucent keycaps?
 This tool can generate relatively realistic renders of arbitrary keyboard layout editor layouts, but because it works by stretching and tinting grayscale images there are many limitations on what can be shown, compared to 3D renders. If you're looking for photorealistic visualizations on a limited number of keyboards [kbrenders.com](http://www.kbrenders.com) can be a useful resource. For certain custom work, however you may still have to do post-processing in photoshop, or commission a professional like thesiscamper to create real 3D renders of your set design.
 
