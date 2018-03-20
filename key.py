@@ -12,9 +12,9 @@ lab2rgb_transform = ImageCms.buildTransformFromOpenProfiles(lab_profile, srgb_pr
 class Key:
     __slots__ = [
         'x', 'y', 'width', 'height', 'x2', 'y2', 'width2', 'height2',
+        'rotation_angle', 'rotation_x', 'rotation_y',
         'res', 'str_profile', 'decal', 'step', 'pic', 'color',
         'align', 'labels', 'label_sizes', 'label_colors',
-        'rotation_angle', 'rotation_x', 'rotation_y',
     ]
 
 
@@ -23,6 +23,9 @@ class Key:
         self.width = self.height = 1.0
         self.x2 = self.y2 = 0.0
         self.width2 = self.height2 = 0.0
+
+        self.rotation_angle = 0.0
+        self.rotation_x = self.rotation_y = 0.0
 
         self.res = 200
         self.str_profile = 'SA'
@@ -33,9 +36,6 @@ class Key:
         self.labels = []
         self.label_sizes = [3.0] * 12
         self.label_colors = ['#000000'] * 12
-
-        self.rotation_angle = 0.0
-        self.rotation_x = self.rotation_y = 0.0
 
 
     @functools.lru_cache()
@@ -90,11 +90,12 @@ class Key:
     @functools.lru_cache()
     def get_label_props(self):
         if self.decal:
-            props = {'margin_x': 96, 'margin_top': 40, 'margin_bottom': 40, 'line_spacing': 16}
+            props = {'margin_x': .48, 'margin_top': .2, 'margin_bottom': .2, 'line_spacing': .08}
         elif self.get_full_profile()[0] == 'GMK':
-            props = {'margin_x': 44, 'margin_top': 28, 'margin_bottom': 64, 'line_spacing': 12}
+            props = {'margin_x': .22, 'margin_top': .14, 'margin_bottom': .32, 'line_spacing': .06}
         else:
-            props = {'margin_x': 44, 'margin_top': 32, 'margin_bottom': 58, 'line_spacing': 16}
+            props = {'margin_x': .22, 'margin_top': .16, 'margin_bottom': .29, 'line_spacing': .08}
+        props = {k: int(v * self.res) for k, v in props.items()}
 
         # center SA and decal labels if not explicitly aligned
         align = self.align if self.align else 0
@@ -110,7 +111,7 @@ class Key:
             col = (1 if col < 1 else None) if (center_col and row < 3) or (center_front and row > 2) else col
             row = (1 if row < 1 else None) if (center_row and row < 3) else row
             label_size = self.label_sizes[i] if row != None and row < 3 and (self.label_sizes[i] > 0) else 3.0
-            props['font_sizes'].append(int(18 + label_size * 6))
+            props['font_sizes'].append(int(.09 * self.res + .03 * self.res * label_size))
             props['positions'].append((row, col))
 
         return props
@@ -131,13 +132,14 @@ class Key:
             left2, top2 = left * math.cos(a) - top * math.sin(a), top * math.cos(a) + left * math.sin(a)
 
             x, y = rx + x2 - key_img.width / u / 2 - left2, ry + y2 - key_img.height / u / 2 - top2
-        return (int(x * u), int(y * u), int(x * u + key_img.width), int(y * u + key_img.height))
+        return (int(i) for i in (x * u, y * u, x * u + key_img.width, y * u + key_img.height))
 
 
     def get_base_img(self, full_profile):
         # get base image according to profile and perceptual gray of key color
         base_num = str([0xE0, 0xB0, 0x80, 0x50, 0x20].index(self.get_base_color()) + 1)
-        return Image.open('images/{}_{}{}.png'.format(*full_profile, base_num)).convert('RGBA') 
+        base_img = Image.open('images/{}_{}{}.png'.format(*full_profile, base_num)).convert('RGBA')
+        return base_img.resize((int(s * self.res / 200) for s in base_img.size), resample=Image.BILINEAR)
 
 
     def get_decal_img(self):
@@ -267,9 +269,22 @@ class Key:
         return (w, h)
 
 
+    def pic_key(self, key_img):
+        try:
+            props = self.get_label_props()
+            position = (x_offset + props['margin_x'], y_offset + props['margin_top'])
+            size = (width - props['margin_x'] * 2, height - props['margin_top'] - props['margin_bottom'])
+            label_img = Image.open(requests.get(self.labels[0], stream=True).raw).resize(size)
+            key_img.paste(label_img, position, mask=label_img)
+            return key_img
+        except Exception:
+            return key_img
+
+
     def label_key(self, key_img):
         # if blank, exit immediately
         if len(self.labels) < 1: return key_img
+        if self.pic: return self.pic_key(key_img)
 
         props = self.get_label_props()
         width, height = int(self.width * self.res), int(self.height * self.res)
@@ -291,16 +306,6 @@ class Key:
         front_plane = Image.new('RGBA', (width, height - props['margin_bottom'] * 2))
         front_draw = ImageDraw.Draw(front_plane)
 
-        if self.pic:
-            try:
-                position = (x_offset + props['margin_x'], y_offset + props['margin_top'])
-                size = (width - props['margin_x'] * 2, height - props['margin_top'] - props['margin_bottom'])
-                label_img = Image.open(requests.get(self.labels[0], stream=True).raw).resize(size)
-                key_img.paste(label_img, position, mask=label_img)
-                return key_img
-            except Exception:
-                return key_img
-
         for i in range(min(len(self.labels), 12)):
             (row, col), text = props['positions'][i], self.labels[i]
             if not text or row == None: continue
@@ -321,12 +326,13 @@ class Key:
             )
 
         # compress front printed labels vertically
-        front_plane = front_plane.resize((width, props['margin_bottom']), resample=Image.LANCZOS)
+        front_plane = front_plane.resize((width, props['margin_bottom']), resample=Image.BILINEAR)
         key_img.paste(front_plane, (x_offset, height - props['margin_bottom'] + y_offset), mask=front_plane)
         return key_img
 
 
-    def render(self):
+    def render(self, scale):
+        self.res = int(self.res / scale)
         # create key, then tint key, then label key
         key_img = self.label_key(self.tint_key(self.create_key()))
-        return key_img.rotate(-self.rotation_angle, resample=Image.BICUBIC, expand=1)
+        return key_img.rotate(-self.rotation_angle, resample=Image.BILINEAR, expand=1)

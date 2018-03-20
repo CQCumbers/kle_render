@@ -1,29 +1,28 @@
 import copy, html, lxml.html, re, json, functools
-from multiprocessing.dummy import Lock, Pool
+from multiprocessing.dummy import Pool, RLock
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 from key import Key
 
 
 class Keyboard_Render:
-    __slots__ = ['data', 'keyboard', 'max_size']
+    __slots__ = ['keys', 'keyboard', 'max_size', 'color']
 
 
     def __init__(self, json):
         # parse keyboard-layout-editor JSON format
-        self.data = self.deserialise(json)
+        data = self.deserialise(json)
+        self.keys, self.color = data['keys'], ImageColor.getrgb(data['meta']['backcolor'])
+        self.keyboard = Image.new('RGB', (1000, 1000), color=self.color)
+        self.max_size = (0, 0)
 
 
     def render(self):
         # choose size and scale of canvas depending on number of keys
-        keys, c = self.data['keys'], ImageColor.getrgb(self.data['meta']['backcolor'])
-        scale, border = min(int(len(keys) / 160 + 1), 5), 24
-        side_len = int((50 * len(keys) + 2 * border) / scale)
-        self.keyboard = Image.new('RGB', (side_len, side_len), color=c)
-        self.max_size = (0, 0)
+        scale, border = min(int(len(self.keys) / 160 + 1), 5), 24
 
         # render each key using multiprocessing
-        pool, lock = Pool(16), Lock()
-        pool.map(functools.partial(self.render_key, scale, border, lock), keys)
+        pool, lock = Pool(4), RLock()
+        pool.map(functools.partial(self.render_key, scale, border, lock), self.keys)
 
         # watermark and crop the image
         self.max_size = [size + int(border / scale) for size in self.max_size]
@@ -34,26 +33,22 @@ class Keyboard_Render:
 
     def render_key(self, scale, border, lock, key):
         # render key and scale resulting image for subpixel accuracy
-        key_img = key.render()
-        scaled_img = Image.new('RGBA', tuple(int(i / scale + 2) * scale for i in key_img.size))
-        scaled_img.paste(key_img, tuple(coord % scale for coord in key.get_location(key_img)[:2]), mask=key_img)
-        scaled_img = scaled_img.resize(tuple(int(i / scale) for i in scaled_img.size), resample=Image.LANCZOS)
+        key_img = key.render(scale)
 
         # paste in proper location and update max_size
-        location = [int((coord + border) / scale) for coord in key.get_location(key_img)]
-        self.max_size = [max(location[2], self.max_size[0]), max(location[3], self.max_size[1])]
-        self.expand_keyboard(scale, lock)
-        self.keyboard.paste(scaled_img, (location[0], location[1]), mask=scaled_img)
-
-
-    def expand_keyboard(self, scale, lock):
-        if all(self.max_size[i] < self.keyboard.size[i] for i in range(2)): return
+        location = [coord + border for coord in key.get_location(key_img)]
         with lock:
-            c = ImageColor.getrgb(self.data['meta']['backcolor'])
-            new_size = tuple(int(size + 1000 / scale) for size in self.max_size)
-            old_keyboard = self.keyboard
-            self.keyboard = Image.new('RGB', new_size, color=c)
-            self.keyboard.paste(old_keyboard, (0, 0))
+            self.max_size = [max(location[2], self.max_size[0]), max(location[3], self.max_size[1])]
+            self.expand_keyboard(scale)
+            self.keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
+
+
+    def expand_keyboard(self, scale):
+        if all(self.max_size[i] < self.keyboard.size[i] for i in range(2)): return
+        new_size = tuple(int(size + 1000 / scale) for size in self.max_size)
+        new_keyboard = Image.new('RGB', new_size, color=self.color)
+        new_keyboard.paste(self.keyboard, (0, 0))
+        self.keyboard = new_keyboard
 
 
     def watermark_keyboard(self, text, scale):
