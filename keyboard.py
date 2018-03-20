@@ -1,7 +1,7 @@
 import copy, html, lxml.html, re, json, functools
 from multiprocessing.dummy import Pool, RLock
 from PIL import Image, ImageColor, ImageDraw, ImageFont
-from .key import Key
+from key import Key
 
 
 class Keyboard:

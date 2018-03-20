@@ -1,7 +1,7 @@
 import json, github, io, flask_wtf, flask_wtf.file, wtforms, flask_cors
 from flask import Flask, Blueprint, redirect, send_file, render_template, flash, Markup
 from flask_restplus import Api, Resource, fields
-from .keyboard import Keyboard
+from keyboard import Keyboard
 
 
 app = Flask(__name__)

@@ -1,5 +1,5 @@
 from timeit import default_timer as timer
-from .keyboard import Keyboard, deserialise
+from keyboard import Keyboard, deserialise
 import json, github, dotenv, os
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
