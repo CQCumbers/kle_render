@@ -1,15 +1,17 @@
-import kle_render
-import requests, json
 from timeit import default_timer as timer
+from .keyboard import Keyboard, deserialise
+import json, github, dotenv, os
 
-id = '4de8adb88cb4c45c2f43'
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+dotenv.load_dotenv(dotenv_path)
+gist_id = '4de8adb88cb4c45c2f43'
+
+g = github.Github(os.environ.get('API_TOKEN'))
+files = [v for k, v in g.get_gist(gist_id).files.items() if k.endswith('.kbd.json')]
+content = json.loads(files[0].content)
+
 start = timer()
-
-data = kle_render.deserialise(json.loads([value for key, value in requests.get('http://api.github.com/gists/%s' % id).json()['files'].items() if key.endswith('.kbd.json')][0]['content']))
-end = timer()
-print("--- deserialised at %s seconds ---" % (end - start))
-
-img = kle_render.render_keyboard(data)
+img = Keyboard(content).render()
 end = timer()
 print("--- rendered at %s seconds ---" % (end - start))
 

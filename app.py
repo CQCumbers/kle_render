@@ -1,7 +1,7 @@
 import json, github, io, flask_wtf, flask_wtf.file, wtforms, flask_cors
 from flask import Flask, Blueprint, redirect, send_file, render_template, flash, Markup
 from flask_restplus import Api, Resource, fields
-from kle_render import Keyboard
+from .keyboard import Keyboard
 
 
 app = Flask(__name__)
@@ -34,8 +34,8 @@ class FromGist(Resource):
     def get(self, id):
         # authenticate with Github to avoid rate limits
         g = github.Github(app.config['API_TOKEN'])  
-        content = json.loads([v for k, v in g.get_gist(id).files.items() if k.endswith('.kbd.json')][0].content)
-        img = Keyboard(content).render()
+        files = [v for k, v in g.get_gist(id).files.items() if k.endswith('.kbd.json')]
+        img = Keyboard(json.loads(files[0].content)).render()
         return serve_pil_image(img)
 
 
@@ -72,12 +72,12 @@ def index():
                 return redirect('/api/'+form.url.data.split('gists/', 1)[1])
             flash('Not a Keyboard Layout Editor gist')
         elif form.json.data:
-            #try:
-            content = json.loads(form.json.data.read().decode('utf-8'))
-            img = Keyboard(content).render()
-            return serve_pil_image(img)
-            #except ValueError:
-            #    flash(Markup('Invalid JSON input - see (?) for help'))
+            try:
+                content = json.loads(form.json.data.read().decode('utf-8'))
+                img = Keyboard(content).render()
+                return serve_pil_image(img)
+            except ValueError:
+                flash(Markup('Invalid JSON input - see (?) for help'))
     flash_errors(form)
     return render_template('index.html', form=form)
 

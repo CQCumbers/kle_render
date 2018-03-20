@@ -1,2 +1,2 @@
-from kle_render import Keyboard, get_labels, deserialise
-from key import Key
+from .keyboard import Keyboard, deserialise, get_labels
+from .key import Key
