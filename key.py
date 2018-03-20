@@ -110,7 +110,7 @@ class Key:
             row, col = (int(pattern.index(i) / 3), pattern.index(i) % 3)
             col = (1 if col < 1 else None) if (center_col and row < 3) or (center_front and row > 2) else col
             row = (1 if row < 1 else None) if (center_row and row < 3) else row
-            label_size = self.label_sizes[i] if row != None and row < 3 and (self.label_sizes[i] > 0) else 3.0
+            label_size = self.label_sizes[i] if row and row < 3 else 3.0
             props['font_sizes'].append(int(.09 * self.res + .03 * self.res * label_size))
             props['positions'].append((row, col))
 

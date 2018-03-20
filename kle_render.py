@@ -72,7 +72,7 @@ class Keyboard_Render:
         # split into labels for each part of key
         labels = key.split('\n')
         for i in range(len(labels)):
-            tree = lxml.html.fragment_fromstring('<div>' + labels[i] + '</div>')
+            tree = lxml.html.fragment_fromstring('<p>' + labels[i] + '</p>')
             # set key.pic to true and make label url of image
             if tree.xpath('//img[1]/@src'):
                 return (tree.xpath('//img[1]/@src'), True)
@@ -90,7 +90,7 @@ class Keyboard_Render:
             # replace breaks with newlines and remove control char
             for br in tree.xpath('//br'):
                 br.text = '\n'
-            labels[i] = tree.text_content().replace('<90>', '')
+            labels[i] = html.unescape(tree.text_content().replace('<90>', ''))
         return (labels, False)
     
 
