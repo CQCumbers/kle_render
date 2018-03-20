@@ -16,8 +16,8 @@ class Keyboard_Render:
     def render(self):
         # choose size and scale of canvas depending on number of keys
         keys, c = self.data['keys'], ImageColor.getrgb(self.data['meta']['backcolor'])
-        scale, border = min(int(len(keys) / 100 + 1), 5), 24
-        side_len = int((200 * len(keys) + 2 * border) / scale)
+        scale, border = min(int(len(keys) / 160 + 1), 5), 24
+        side_len = int((50 * len(keys) + 2 * border) / scale)
         self.keyboard = Image.new('RGB', (side_len, side_len), color=c)
         self.max_size = (0, 0)
 
@@ -51,9 +51,9 @@ class Keyboard_Render:
         with lock:
             c = ImageColor.getrgb(self.data['meta']['backcolor'])
             new_size = tuple(int(size + 1000 / scale) for size in self.max_size)
-            new_keyboard = Image.new('RGB', new_size, color=c)
-            new_keyboard.paste(self.keyboard, (0, 0))
-            self.keyboard = new_keyboard
+            old_keyboard = self.keyboard
+            self.keyboard = Image.new('RGB', new_size, color=c)
+            self.keyboard.paste(old_keyboard, (0, 0))
 
 
     def watermark_keyboard(self, text, scale):
