@@ -13,7 +13,7 @@ class Key:
     __slots__ = [
         'x', 'y', 'width', 'height', 'x2', 'y2', 'width2', 'height2',
         'rotation_angle', 'rotation_x', 'rotation_y',
-        'res', 'str_profile', 'decal', 'step', 'pic', 'color',
+        'res', 'flat', 'str_profile', 'decal', 'step', 'pic', 'color',
         'align', 'labels', 'label_sizes', 'label_colors',
     ]
 
@@ -28,6 +28,7 @@ class Key:
         self.rotation_x = self.rotation_y = 0.0
 
         self.res = 200
+        self.flat = False
         self.str_profile = 'SA'
         self.decal = self.step = self.pic = False
         self.color = '#EEEEEE'
@@ -110,7 +111,7 @@ class Key:
             row, col = (int(pattern.index(i) / 3), pattern.index(i) % 3)
             col = (1 if col < 1 else None) if (center_col and row < 3) or (center_front and row > 2) else col
             row = (1 if row < 1 else None) if (center_row and row < 3) else row
-            label_size = self.label_sizes[i] if row and row < 3 else 3.0
+            label_size = self.label_sizes[i] if row != None and row < 3 else 3.0
             props['font_sizes'].append(int(.09 * self.res + .03 * self.res * label_size))
             props['positions'].append((row, col))
 
@@ -139,7 +140,8 @@ class Key:
         # get base image according to profile and perceptual gray of key color
         base_num = str([0xE0, 0xB0, 0x80, 0x50, 0x20].index(self.get_base_color()) + 1)
         base_img = Image.open('images/{}_{}{}.png'.format(*full_profile, base_num)).convert('RGBA')
-        return base_img.resize((int(s * self.res / 200) for s in base_img.size), resample=Image.BILINEAR)
+        img = Image.new('RGBA', base_img.size, color=(self.get_base_color(),) * 3) if self.flat else base_img
+        return img.resize((int(s * self.res / 200) for s in img.size), resample=Image.BILINEAR)
 
 
     def get_decal_img(self):
@@ -203,7 +205,7 @@ class Key:
             key_img.paste(touch_surface, (max(int(-x2 * u), 0), max(int(-y2 * u), 0)))
 
             if row_profile == 'STEP':
-                overlap = 60
+                overlap = int(0.3 * self.res)
                 # add left step
                 if x2 < 0:
                     left_img = self.get_base_img((profile, row_profile)).transpose(Image.FLIP_LEFT_RIGHT)
@@ -212,7 +214,7 @@ class Key:
                 # add right step
                 if max(x2 * u, 0) + self.width < width: 
                     right_img = self.get_base_img((profile, row_profile))
-                    img_width = int((width + min(x2, 0) - self.width) * u + overlap + 1)
+                    img_width = int((width - max(-x2, 0) - self.width) * u + overlap + 1)
                     right_step = self.stretch_img(right_img, img_width, int(height * u))
                     key_img.paste(right_step, (max(int(-x2 * u), 0) + int(self.width * u) - overlap, 0))
             else:
@@ -331,8 +333,8 @@ class Key:
         return key_img
 
 
-    def render(self, scale):
-        self.res = int(self.res / scale)
+    def render(self, scale, flat):
+        self.res, self.flat = int(self.res / scale), flat
         # create key, then tint key, then label key
         key_img = self.label_key(self.tint_key(self.create_key()))
         return key_img.rotate(-self.rotation_angle, resample=Image.BILINEAR, expand=1)

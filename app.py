@@ -1,8 +1,7 @@
-#!bin/python
 import json, github, io, flask_wtf, flask_wtf.file, wtforms, flask_cors
 from flask import Flask, Blueprint, redirect, send_file, render_template, flash, Markup
 from flask_restplus import Api, Resource, fields
-from kle_render import Keyboard_Render
+from kle_render import Keyboard
 
 
 app = Flask(__name__)
@@ -36,7 +35,7 @@ class FromGist(Resource):
         # authenticate with Github to avoid rate limits
         g = github.Github(app.config['API_TOKEN'])  
         content = json.loads([v for k, v in g.get_gist(id).files.items() if k.endswith('.kbd.json')][0].content)
-        img = Keyboard_Render(content).render()
+        img = Keyboard(content).render()
         return serve_pil_image(img)
 
 
@@ -45,7 +44,7 @@ class FromGist(Resource):
 class FromJSON(Resource):
     def post(self):
         content = json.loads(api.payload)
-        img = Keyboard_Render(content).render()
+        img = Keyboard(content).render()
         return serve_pil_image(img)
 
 
@@ -75,7 +74,7 @@ def index():
         elif form.json.data:
             #try:
             content = json.loads(form.json.data.read().decode('utf-8'))
-            img = Keyboard_Render(content).render()
+            img = Keyboard(content).render()
             return serve_pil_image(img)
             #except ValueError:
             #    flash(Markup('Invalid JSON input - see (?) for help'))
