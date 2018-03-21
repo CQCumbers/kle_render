@@ -139,8 +139,8 @@ class Key:
     def get_base_img(self, full_profile):
         # get base image according to profile and perceptual gray of key color
         base_num = str([0xE0, 0xB0, 0x80, 0x50, 0x20].index(self.get_base_color()) + 1)
-        base_img = Image.open('images/{}_{}{}.png'.format(*full_profile, base_num)).convert('RGBA')
-        img = Image.new('RGBA', base_img.size, color=(self.get_base_color(),) * 3) if self.flat else base_img
+        if self.flat: return Image.new('RGBA', (self.res,) * 2, color=(self.get_base_color(),) * 3)
+        img = Image.open('images/{}_{}{}.png'.format(*full_profile, base_num)).convert('RGBA')
         return img.resize((int(s * self.res / 200) for s in img.size), resample=Image.BILINEAR)
 
 
@@ -319,7 +319,7 @@ class Key:
             text_width, text_height = self.text_size(text, font, props['line_spacing'])
             # retrieve label color and lighten to simulate reflectivity
             color = ImageColor.getrgb(self.label_colors[i])
-            color = tuple(band + 0x26 for band in color)
+            color = color if self.flat else tuple(band + 0x26 for band in color)
 
             # draw labels accordings to row/col of props
             (front_draw if row == 3 else top_draw).multiline_text(
