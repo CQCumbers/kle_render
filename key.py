@@ -42,7 +42,7 @@ class Key:
     @functools.lru_cache()
     def get_full_profile(self):
         # only GMK and SA base images
-        full_profile = self.str_profile.split()
+        full_profile = self.str_profile.upper().split(' ')
         profile = 'GMK' if full_profile[0] in ('GMK', 'DCS', 'OEM') else 'SA'
 
         # row profile used to specify keys with special base images
@@ -305,7 +305,7 @@ class Key:
         aligns = ['left', 'center', 'right']
         # seperate surface for front printed labels
         top_draw = ImageDraw.Draw(key_img)
-        front_plane = Image.new('RGBA', (width, height - props['margin_bottom'] * 2))
+        front_plane = Image.new('RGBA', (width, max(height - props['margin_bottom'] * 2, 1)))
         front_draw = ImageDraw.Draw(front_plane)
 
         for i in range(min(len(self.labels), 12)):

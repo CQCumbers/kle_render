@@ -10,7 +10,7 @@ flask_cors.CORS(app)
 api_blueprint = Blueprint('api', __name__, url_prefix='/api')
 api = Api(
     api_blueprint, version='1.0', title='KLE-Render API',
-    description='Get prettier images of Keyboard Layout Editor designs'
+    description='Get prettier images of Keyboard Layout Editor designs. URLs are relative to this page.'
 )
 parser = api.parser()
 post = parser.copy()
