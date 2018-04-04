@@ -1,5 +1,4 @@
 import copy, html, lxml.html, re, json, functools
-from multiprocessing.dummy import Pool, RLock
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 from key import Key
 
@@ -20,9 +19,8 @@ class Keyboard:
         # choose size and scale of canvas depending on number of keys
         scale, border = min(int(len(self.keys) / 160 + 1), 5), 24
 
-        # render each key using multiprocessing
-        pool, lock = Pool(4), RLock()
-        pool.map(functools.partial(self.render_key, scale, border, lock), self.keys)
+        # render each key
+        for key in self.keys: self.render_key(key, scale, border)
 
         # watermark and crop the image
         self.max_size = [size + int(border / scale) for size in self.max_size]
@@ -31,16 +29,15 @@ class Keyboard:
         return self.keyboard
 
 
-    def render_key(self, scale, border, lock, key):
+    def render_key(self, key, scale, border):
         # render key and scale resulting image for subpixel accuracy
         key_img = key.render(scale, False)
 
         # paste in proper location and update max_size
         location = [coord + border for coord in key.get_location(key_img)]
-        with lock:
-            self.max_size = [max(location[2], self.max_size[0]), max(location[3], self.max_size[1])]
-            self.expand_keyboard(scale)
-            self.keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
+        self.max_size = [max(location[2], self.max_size[0]), max(location[3], self.max_size[1])]
+        self.expand_keyboard(scale)
+        self.keyboard.paste(key_img, (location[0], location[1]), mask=key_img)
 
 
     def expand_keyboard(self, scale):

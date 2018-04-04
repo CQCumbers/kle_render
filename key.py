@@ -1,12 +1,6 @@
 import functools, math, requests, io
 from PIL import Image, ImageMath, ImageColor, ImageCms, ImageDraw, ImageFont, ImageFilter
-from colormath.color_objects import LabColor, sRGBColor
-from colormath.color_conversions import convert_color
-
-srgb_profile = ImageCms.createProfile('sRGB')
-lab_profile = ImageCms.createProfile('LAB')
-rgb2lab_transform = ImageCms.buildTransformFromOpenProfiles(srgb_profile, lab_profile, 'RGB', 'LAB')
-lab2rgb_transform = ImageCms.buildTransformFromOpenProfiles(lab_profile, srgb_profile, 'LAB', 'RGB')
+from colormath import color_objects, color_conversions
 
 
 class Key:
@@ -137,18 +131,15 @@ class Key:
 
 
     def get_base_img(self, full_profile):
-        # get base image according to profile and perceptual gray of key color
-        base_num = str([0xE0, 0xB0, 0x80, 0x50, 0x20].index(self.get_base_color()) + 1)
-        if self.flat: return Image.new('RGBA', (self.res,) * 2, color=(self.get_base_color(),) * 3)
-        img = Image.open('images/{}_{}{}.png'.format(*full_profile, base_num)).convert('RGBA')
-        return img.resize((int(s * self.res / 200) for s in img.size), resample=Image.BILINEAR)
+        if self.flat: return Image.new('RGBA', (self.res,) * 2, color=ImageColor.getrgb(self.color))
+        return open_base_img(full_profile, self.res, self.get_base_color(), self.color)
 
 
     def get_decal_img(self):
         # calculate width and height of image to fit decal label
         label_props = self.get_label_props()
         font = ImageFont.truetype(self.get_font_path(), label_props['font_sizes'][0])
-        w, h = self.text_size(self.labels[0], font, label_props['line_spacing'])
+        w, h = text_size(self.labels[0], font, label_props['line_spacing'])
         key_img = Image.new('RGBA', (w + label_props['margin_x'] * 2, h + label_props['margin_top'] * 2))
         return key_img
 
@@ -226,58 +217,13 @@ class Key:
             return key_img
 
 
-    def tint_key(self, key_img): 
-        # get base image in Lab form
-        alpha = key_img.split()[3]
-        key_img = ImageCms.applyTransform(key_img, rgb2lab_transform)
-        l, a, b = key_img.split()
-
-        # convert key color to Lab
-        # a1 and b1 should be scaled by 128/100, but desaturation looks more natural
-        rgb_color = sRGBColor(*ImageColor.getrgb(self.color), is_upscaled=True)
-        lab_color = convert_color(rgb_color, LabColor)
-        l1, a1, b1 = lab_color.get_value_tuple()
-        l1, a1, b1 = int(l1 * 256 / 100), int(a1 + 128), int(b1 + 128)
-
-        # change Lab of base image to match that of key color
-        l = ImageMath.eval('l + l1 - l_avg', l=l, l1=l1, l_avg=self.get_base_color()).convert('L')
-        a = ImageMath.eval('a + a1 - a', a=a, a1=a1).convert('L')
-        b = ImageMath.eval('b + b1 - b', b=b, b1=b1).convert('L')
-
-        key_img = Image.merge('LAB', (l, a, b))
-        key_img = ImageCms.applyTransform(key_img, lab2rgb_transform)
-        key_img = Image.merge('RGBA', (*key_img.split(), alpha))
-        return key_img
-
-
-    def break_text(self, text, font, limit):
-        words, lines = text.split(' '), ['']
-        while words:
-            word = words.pop(0)
-            if font.getsize(lines[-1] + word)[0] + 1 < limit or len(lines[-1]) < 1:
-                lines[-1] += word + ' '
-            else:
-                lines.append(word + ' ')
-        return '\n'.join([line[:-1] for line in lines])
-
-
-    def text_size(self, text, font, line_spacing):
-        lines = text.splitlines()
-        if len(lines) < 1: return (0, 0)
-
-        w = max([font.getsize(line)[0] for line in lines])  # max of line widths
-        h = sum([font.getsize(line)[1] for line in lines])  # sum of line heights
-        h += line_spacing * (len(lines) - 1)
-        return (w, h)
-
-
     def pic_key(self, key_img):
         try:
             props = self.get_label_props()
             position = (x_offset + props['margin_x'], y_offset + props['margin_top'])
             size = (width - props['margin_x'] * 2, height - props['margin_top'] - props['margin_bottom'])
-            label_img = Image.open(requests.get(self.labels[0], stream=True).raw).resize(size)
-            key_img.paste(label_img, position, mask=label_img)
+            with Image.open(requests.get(self.labels[0], stream=True).raw).resize(size) as label_img:
+                key_img.paste(label_img, position, mask=label_img)
             return key_img
         except Exception:
             return key_img
@@ -314,9 +260,9 @@ class Key:
 
             # load font and calculate text dimensions
             font = ImageFont.truetype(self.get_font_path(), props['font_sizes'][i])
-            text = self.break_text(text, font, width - props['margin_x'] * 2) if not self.decal else text
+            text = break_text(text, font, width - props['margin_x'] * 2) if not self.decal else text
             text = text.upper() if self.get_full_profile()[0] == 'SA' and not self.decal else text
-            text_width, text_height = self.text_size(text, font, props['line_spacing'])
+            text_width, text_height = text_size(text, font, props['line_spacing'])
             # retrieve label color and lighten to simulate reflectivity
             color = ImageColor.getrgb(self.label_colors[i])
             color = color if self.flat else tuple(band + 0x26 for band in color)
@@ -336,5 +282,61 @@ class Key:
     def render(self, scale, flat):
         self.res, self.flat = int(self.res / scale), flat
         # create key, then tint key, then label key
-        key_img = self.label_key(self.tint_key(self.create_key()))
+        key_img = self.label_key(self.create_key())
         return key_img.rotate(-self.rotation_angle, resample=Image.BILINEAR, expand=1)
+
+
+srgb_profile, lab_profile = ImageCms.createProfile('sRGB'), ImageCms.createProfile('LAB', colorTemp=5000)
+rgb2lab_transform = ImageCms.buildTransformFromOpenProfiles(srgb_profile, lab_profile, 'RGB', 'LAB')
+lab2rgb_transform = ImageCms.buildTransformFromOpenProfiles(lab_profile, srgb_profile, 'LAB', 'RGB')
+
+
+@functools.lru_cache()
+def open_base_img(full_profile, res, base_color, color):
+    # get base image according to profile and perceptual gray of key color
+    base_num = str([0xE0, 0xB0, 0x80, 0x50, 0x20].index(base_color) + 1)
+
+    # open image and convert to Lab
+    with Image.open('images/{}_{}{}.png'.format(*full_profile, base_num)) as img:
+        key_img = img.resize((int(s * res / 200) for s in img.size), resample=Image.BILINEAR).convert('RGBA')
+    l, a, b = ImageCms.applyTransform(key_img, rgb2lab_transform).split()
+
+    # convert key color to Lab
+    # a and b should be scaled by 128/100, but desaturation looks more natural
+    rgb_color = color_objects.sRGBColor(*ImageColor.getrgb(color), is_upscaled=True)
+    lab_color = color_conversions.convert_color(rgb_color, color_objects.LabColor)
+    l1, a1, b1 = lab_color.get_value_tuple()
+    l1, a1, b1 = int(l1 * 256 / 100), int(a1 + 128), int(b1 + 128)
+
+    # change Lab of base image to match that of key color
+    l = ImageMath.eval('convert(l + l1 - l_avg, "L")', l=l, l1=l1, l_avg=base_color)
+    a = ImageMath.eval('convert(a + a1 - a, "L")', a=a, a1=a1)
+    b = ImageMath.eval('convert(b + b1 - b, "L")', b=b, b1=b1)
+
+    key_img = ImageCms.applyTransform(Image.merge('LAB', (l, a, b)), lab2rgb_transform)
+    return key_img.convert('RGBA')
+
+
+@functools.lru_cache()
+def break_text(text, font, limit):
+    if not ' ' in text: return text
+    words, lines = text.split(' '), ['']
+    while words:
+        word = words.pop(0)
+        if font.getsize(lines[-1] + word)[0] + 1 < limit or len(lines[-1]) < 1:
+            lines[-1] += word + ' '
+        else:
+            lines.append(word + ' ')
+    return '\n'.join([line[:-1] for line in lines])
+
+
+@functools.lru_cache()
+def text_size(text, font, line_spacing):
+    lines = text.splitlines()
+    if len(lines) < 1: return (0, 0)
+
+    widths, heights = zip(*(font.getsize(line) for line in lines if len(line) > 0))
+    w, h = max(widths), sum(heights)  # max of line widths, sum of line heights
+    h += line_spacing * (len(lines) - 1)
+    return (w, h)
+

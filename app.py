@@ -19,11 +19,12 @@ post.add_argument(
     help='Downloaded JSON (strict) from Raw Data tab of Keyboard Layout Editor'
 )
 app.register_blueprint(api_blueprint)
+github_api = github.Github(app.config['API_TOKEN'])  
 
 
 def serve_pil_image(pil_img):
     img_io = io.BytesIO()
-    pil_img.save(img_io, 'PNG')
+    pil_img.save(img_io, 'PNG', compress_level=3)
     img_io.seek(0)
     return send_file(img_io, mimetype='image/png')
 
@@ -32,9 +33,7 @@ def serve_pil_image(pil_img):
 @api.doc(params={'id': 'Copy from keyboard-layout-editor.com/#/gists/<id>'})
 class FromGist(Resource):
     def get(self, id):
-        # authenticate with Github to avoid rate limits
-        g = github.Github(app.config['API_TOKEN'])  
-        files = [v for k, v in g.get_gist(id).files.items() if k.endswith('.kbd.json')]
+        files = [v for k, v in github_api.get_gist(id).files.items() if k.endswith('.kbd.json')]
         img = Keyboard(json.loads(files[0].content)).render()
         return serve_pil_image(img)
 
