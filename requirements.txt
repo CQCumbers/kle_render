@@ -20,7 +20,7 @@ networkx==2.1
 numpy==1.14.2
 olefile==0.45.1
 packaging==17.1
-Pillow==5.1.0
+Pillow-SIMD==4.3.0.post0
 PyGithub==1.38
 PyJWT==1.6.1
 pyparsing==2.2.0

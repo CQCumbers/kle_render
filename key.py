@@ -180,7 +180,7 @@ class Key:
         if self.decal:
             return self.get_decal_img()
         elif row_profile in ('ISO', 'BIGENTER'):
-            return self.get_base_img((profile, row_profile))
+            return self.get_base_img((profile, row_profile)).copy()
         elif self.width2 == 0.0 and self.height2 == 0.0:
             base_img = self.get_base_img((profile, row_profile))
             return self.stretch_img(base_img, int(self.width * self.res + 1), int(self.height * self.res))
@@ -199,7 +199,7 @@ class Key:
                 overlap = int(0.3 * self.res)
                 # add left step
                 if x2 < 0:
-                    left_img = self.get_base_img((profile, row_profile)).transpose(Image.FLIP_LEFT_RIGHT)
+                    left_img = self.get_base_img((profile, row_profile)).copy().transpose(Image.FLIP_LEFT_RIGHT)
                     left_step = self.stretch_img(left_img, int(-x2 * u + overlap + 1), int(height * u))
                     key_img.paste(left_step, (max(int(x2 * u), 0), max(int(y2 * u), 0)))
                 # add right step
@@ -299,6 +299,7 @@ def open_base_img(full_profile, res, base_color, color):
     # open image and convert to Lab
     with Image.open('images/{}_{}{}.png'.format(*full_profile, base_num)) as img:
         key_img = img.resize((int(s * res / 200) for s in img.size), resample=Image.BILINEAR).convert('RGBA')
+    if full_profile[1] in ('ISO', 'BIGENTER'): alpha = key_img.split()[-1]
     l, a, b = ImageCms.applyTransform(key_img, rgb2lab_transform).split()
 
     # convert key color to Lab
@@ -313,8 +314,9 @@ def open_base_img(full_profile, res, base_color, color):
     a = ImageMath.eval('convert(a + a1 - a, "L")', a=a, a1=a1)
     b = ImageMath.eval('convert(b + b1 - b, "L")', b=b, b1=b1)
 
-    key_img = ImageCms.applyTransform(Image.merge('LAB', (l, a, b)), lab2rgb_transform)
-    return key_img.convert('RGBA')
+    key_img = ImageCms.applyTransform(Image.merge('LAB', (l, a, b)), lab2rgb_transform).convert('RGBA')
+    if full_profile[1] in ('ISO', 'BIGENTER'): key_img.putalpha(alpha)
+    return key_img
 
 
 @functools.lru_cache()

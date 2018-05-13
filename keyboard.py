@@ -68,8 +68,8 @@ class Keyboard:
 def get_labels(key, fa_subs, kb_subs):
     # split into labels for each part of key
     labels = key.split('\n')
-    for i in range(len(labels)):
-        tree = lxml.html.fragment_fromstring('<p>' + labels[i] + '</p>')
+    for i, label in enumerate(labels):
+        tree = lxml.html.fragment_fromstring(label, create_parent=True)
         # set key.pic to true and make label url of image
         if tree.xpath('//img[1]/@src'):
             return (tree.xpath('//img[1]/@src'), True)
@@ -84,10 +84,9 @@ def get_labels(key, fa_subs, kb_subs):
             if kb_class and kb_class.group(0) in kb_subs:
                 kb_icon.text = chr(int(kb_subs[kb_class.group(0)], 16))
 
-        # replace breaks with newlines and remove control char
-        for br in tree.xpath('//br'):
-            br.text = '\n'
-        labels[i] = html.unescape(tree.text_content().replace('<90>', ''))
+        # replace breaks with newlines and remove html entities
+        for br in tree.xpath('//br'): br.text = '\n'
+        labels[i] = html.unescape(tree.text_content())
     return (labels, False)
 
 
