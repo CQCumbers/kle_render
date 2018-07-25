@@ -1,25 +1,24 @@
 import json, github, io, flask_wtf, flask_wtf.file, wtforms, flask_cors
 from flask import Flask, Blueprint, redirect, send_file, render_template, flash, Markup
-from flask_restplus import Api, Resource, fields
+from flask_restplus import Api, Resource
 from keyboard import Keyboard
 
 
 app = Flask(__name__)
 app.config.from_object('config')
 flask_cors.CORS(app)
-api_blueprint = Blueprint('api', __name__, url_prefix='/api')
-api = Api(
-    api_blueprint, version='1.0', title='KLE-Render API',
-    description='Get prettier images of Keyboard Layout Editor designs. URLs are relative to this page.'
-)
-parser = api.parser()
-post = parser.copy()
-post.add_argument(
-    'data', required=True, location='json',
-    help='Downloaded JSON (strict) from Raw Data tab of Keyboard Layout Editor'
-)
-app.register_blueprint(api_blueprint)
 github_api = github.Github(app.config['API_TOKEN'])  
+blueprint = Blueprint('api', __name__, url_prefix='/api')
+api = Api(
+    blueprint, version='1.0', title='KLE-Render API',
+    description='Prettier images of Keyboard Layout Editor designs. URLs relative to this page'
+)
+kle_parser = api.parser()
+kle_parser.add_argument(
+    'data', required=True, location='json',
+    help='Downloaded strict JSON from Raw Data tab of Keyboard Layout Editor'
+)
+app.register_blueprint(blueprint)
 
 
 def serve_pil_image(pil_img):
@@ -29,8 +28,8 @@ def serve_pil_image(pil_img):
     return send_file(img_io, mimetype='image/png')
 
 
-@api.route('/<id>', endpoint='from_gist')
-@api.doc(params={'id': 'Copy from keyboard-layout-editor.com/#/gists/<id>'})
+@api.route('/<id>')
+@api.param('id', 'Copy from keyboard-layout-editor.com/#/gists/<id>')
 class FromGist(Resource):
     def get(self, id):
         files = [v for k, v in github_api.get_gist(id).files.items() if k.endswith('.kbd.json')]
@@ -38,12 +37,11 @@ class FromGist(Resource):
         return serve_pil_image(img)
 
 
-@api.route('/', endpoint='from_json')
-@api.expect(post)
+@api.route('/')
+@api.expect(kle_parser)
 class FromJSON(Resource):
     def post(self):
-        content = json.loads(api.payload)
-        img = Keyboard(content).render()
+        img = Keyboard(api.payload).render()
         return serve_pil_image(img)
 
 
