@@ -1,4 +1,4 @@
-## How To Get a Gist URL
+# How To Get a Gist URL
 
 ![Step 1: Sign in to Keyboard Layout Editor with Github](help1_1.png)
 

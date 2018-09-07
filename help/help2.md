@@ -1,4 +1,4 @@
-## How To Download JSON
+# How To Download JSON
 
 ![Step 1: Click on the "Raw Data" tab](help2_1.png)
 
