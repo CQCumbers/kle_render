@@ -65,7 +65,7 @@
               </a>
               <div class="custom-file">
                 {{ form.json(class="custom-file-input") }}
-                <span class="custom-file-label">Choose file</span>
+                <span class="custom-file-label"></span>
               </div>
             </div>
             <button type="submit" class="btn btn-primary ladda-button px-4 mt-2" data-style="expand-right">
@@ -115,8 +115,9 @@
 
       $('.custom-file-input').on('change', function() {
         let fileName = $(this).val().split('\\').pop();
-        $(this).next('.custom-file-control').addClass("selected").html(fileName);
+        $(this).next('.custom-file-label').html(fileName || 'Choose file');
       });
+      $('.custom-file-input').change();
     </script>
   </body>
 </html>
