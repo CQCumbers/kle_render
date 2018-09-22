@@ -8,7 +8,7 @@ class Key:
         'x', 'y', 'width', 'height', 'x2', 'y2', 'width2', 'height2',
         'rotation_angle', 'rotation_x', 'rotation_y',
         'res', 'flat', 'str_profile', 'decal', 'step', 'pic', 'color',
-        'align', 'labels', 'label_sizes', 'label_colors',
+        'align', 'labels', 'label_sizes', 'label_colors', 'model_res',
     ]
 
 
@@ -31,6 +31,7 @@ class Key:
         self.labels = []
         self.label_sizes = [3.0] * 12
         self.label_colors = ['#000000'] * 12
+        self.model_res = 0.01905
 
 
     @functools.lru_cache()
@@ -82,7 +83,6 @@ class Key:
             return 0x20  # 32
 
     
-    @functools.lru_cache()
     def get_label_props(self):
         if self.decal:
             props = {'margin_x': .48, 'margin_top': .2, 'margin_bottom': .2, 'line_spacing': .08}
@@ -119,8 +119,7 @@ class Key:
 
         if self.rotation_angle != 0 or self.rotation_x != 0 or self.rotation_y != 0:
             # center about which to rotate key
-            rx, ry = self.rotation_x, self.rotation_y 
-            a = self.rotation_angle * math.pi / 180
+            rx, ry, a = self.rotation_x, self.rotation_y, math.radians(self.rotation_angle)
             x2, y2 = x * math.cos(a) - y * math.sin(a), y * math.cos(a) + x * math.sin(a)
 
             left, top = -self.width / 2, -self.height / 2
@@ -130,9 +129,27 @@ class Key:
         return (int(i) for i in (x * u, y * u, x * u + key_img.width, y * u + key_img.height))
 
 
+    def get_model_location(self):
+        # get bounding box of model in x/y plane
+        x, y, res = min(self.x, self.x + self.x2), min(self.y, self.y + self.y2), self.model_res
+        width = max(self.width2 + abs(self.x2), self.width)
+        height = max(self.height2 + abs(self.y2), self.height)
+        if self.rotation_angle != 0 or self.rotation_x != 0 or self.rotation_y != 0:
+            rx, ry, a = self.rotation_x, self.rotation_y, math.radians(self.rotation_angle)
+            x, y = rx + x * math.cos(a) - y * math.sin(a), ry + y * math.cos(a) + x * math.sin(a)
+            width, height = width * math.cos(a) - height * math.sin(a), height * math.cos(a) + width * math.sin(a)
+        return (-x * res, y * res, -(x + width) * res, (y + height) * res)
+
+
     def get_base_img(self, full_profile):
-        if self.flat: return Image.new('RGBA', (self.res,) * 2, color=ImageColor.getrgb(self.color))
+        if self.flat:
+            res, color, row, sizes = self.res, self.color, full_profile[1], {'ISO': (1.5, 2), 'BIGENTER': (2.25, 2)}
+            return Image.new('RGBA', [int(res * x) for x in sizes.get(row, (1, 1))], color=ImageColor.getrgb(color))
         return open_base_img(full_profile, self.res, self.get_base_color(), self.color)
+
+
+    def get_base_model(self, full_profile, scene):
+        return copy_model('{0} {1}'.format(*full_profile), scene)
 
 
     def get_decal_img(self):
@@ -144,13 +161,20 @@ class Key:
         return key_img
 
 
+    def get_decal_model(self, scene):
+        # copy dimensions of image decal
+        width, height = self.get_decal_img().size
+        model = copy_model('DECAL', scene)
+        self.stretch_model(model, width / self.res, height / self.res)
+        return model
+
+
     def stretch_img(self, base_img, width, height): 
         w, h = base_img.size
         new_img = Image.new('RGBA', (width, height)) 
         new_img.paste(base_img, (0, 0, base_img.width, base_img.height))
 
         # stretch or crop base image horizontally
-        # gaussian blur to reduce stretch lines
         if width > w:
             center_part = base_img.crop((int(w / 2), 0, int(w / 2) + 10, h))
             right_part = base_img.crop((int(w / 2) + 1, 0, w, h))
@@ -174,6 +198,25 @@ class Key:
 
         return new_img
 
+
+    def stretch_model(self, model, width, height):
+        for v in model.data.vertices:
+            if width > 1:
+                # shift right section right
+                v.co[0] -= (width - 1) * self.model_res if v.co[0] < -self.model_res / 2 else 0
+            elif width < 1:
+                # keep left section, compress middle section, shift right section left
+                res, mid = self.model_res, width * self.model_res / 2
+                v.co[0] = v.co[0] if v.co[0] > -mid else (-mid if v.co[0] > -res + mid else v.co[0] + res - mid * 2)
+
+            if height > 1:
+                # shift bottom section down
+                v.co[1] += (height - 1) * self.model_res if v.co[1] > self.model_res / 2 else 0
+            elif height < 1:
+                # keep top section, compress middle section, shift bottom section up
+                res, mid = self.model_res, height * self.model_res / 2
+                v.co[1] = v.co[1] if v.co[1] < mid else (mid if v.co[1] < res - mid else v.co[1] - res + mid * 2)
+
     
     def create_key(self):
         profile, row_profile = self.get_full_profile()
@@ -187,8 +230,8 @@ class Key:
         else:
             # calculate total width of keycap
             u, x2, y2 = self.res, self.x2, self.y2
-            width = max(self.width2 + self.x2, self.width) if x2 >= 0 else max(self.width - x2, self.width2)
-            height = max(self.height2 + self.y2, self.height) if y2 >= 0 else max(self.height - y2, self.height2)
+            width = max(self.width2 + x2, self.width) if x2 >= 0 else max(self.width - x2, self.width2)
+            height = max(self.height2 + y2, self.height) if y2 >= 0 else max(self.height - y2, self.height2)
             # create touch surface
             key_img = Image.new('RGBA', (int(width * u + 1), int(height * u)))
             base_img = self.get_base_img((profile, 'BASE'))
@@ -201,13 +244,14 @@ class Key:
                 if x2 < 0:
                     left_img = self.get_base_img((profile, row_profile)).copy().transpose(Image.FLIP_LEFT_RIGHT)
                     left_step = self.stretch_img(left_img, int(-x2 * u + overlap + 1), int(height * u))
-                    key_img.paste(left_step, (max(int(x2 * u), 0), max(int(y2 * u), 0)))
+                    key_img.paste(left_step, (0, 0))
                 # add right step
-                if max(x2 * u, 0) + self.width < width: 
+                if max(-x2, 0) + self.width < width: 
                     right_img = self.get_base_img((profile, row_profile))
-                    img_width = int((width - max(-x2, 0) - self.width) * u + overlap + 1)
+                    img_width = int((width - self.width - max(-x2, 0)) * u + overlap + 1)
                     right_step = self.stretch_img(right_img, img_width, int(height * u))
-                    key_img.paste(right_step, (max(int(-x2 * u), 0) + int(self.width * u) - overlap, 0))
+                    img_x = int((max(-x2, 0) + self.width) * u - overlap)
+                    key_img.paste(right_step, (img_x, 0))
             else:
                 # handle arbitrary second surface
                 extra_img = self.get_base_img((profile, row_profile))
@@ -215,6 +259,52 @@ class Key:
                 key_img.paste(extra_surface, (max(int(x2 * u), 0), max(int(y2 * u), 0)))
 
             return key_img
+
+
+    def create_model(self, scene):
+        profile, row_profile = self.get_full_profile()
+        if self.decal:
+            return self.get_decal_model(scene)
+        elif row_profile in ('ISO', 'BIGENTER'):
+            return self.get_base_model((profile, row_profile), scene)
+        elif self.width2 == 0.0 and self.height2 == 0.0:
+            model = self.get_base_model((profile, row_profile), scene)
+            self.stretch_model(model, self.width, self.height)
+            return model
+        else:
+            # calculate total width of keycap
+            model_res, x2, y2 = self.model_res, self.x2, self.y2
+            width = max(self.width2 + x2, self.width) if x2 >= 0 else max(self.width - x2, self.width2)
+            height = max(self.height2 + y2, self.height) if y2 >= 0 else max(self.height - y2, self.height2)
+            # create touch surface
+            key_model = self.get_base_model((profile, 'BASE'), scene)
+            self.stretch_model(key_model, self.width, self.height)
+            # move touch surface mesh relative to object origin
+            for v in key_model.data.vertices:
+                v.co[0] -= max(-x2, 0) * model_res
+                v.co[1] += max(-y2, 0) * model_res
+            
+            if row_profile == 'STEP':
+                # add left step
+                if x2 < 0:
+                    left_step = self.get_base_model((profile, row_profile), scene)
+                    for v in left_step.data.vertices: v.co[0] = -model_res + 0.001 - v.co[0]
+                    self.stretch_model(left_step, -x2 + 0.333, height)
+                    left_step.parent = key_model
+                # add right step
+                if max(-x2, 0) + self.width < width: 
+                    right_step = self.get_base_model((profile, row_profile), scene)
+                    self.stretch_model(right_step, width - self.width - max(-x2, 0) + 0.333, height)
+                    right_step.location = (-(max(-x2, 0) + self.width - 0.333) * model_res, 0, 0)
+                    right_step.parent = key_model
+            else:
+                # handle arbitrary second surface
+                extra_model = self.get_base_model((profile, row_profile), scene)
+                self.stretch_model(extra_model, self.width2, self.height2)
+                extra_model.location = (-max(x2 * model_res, 0), max(y2 * model_res, 0), 0)
+                extra_model.parent = key_model
+
+            return key_model
 
 
     def pic_key(self, key_img):
@@ -283,7 +373,15 @@ class Key:
         self.res, self.flat = int(self.res / scale), flat
         # create key, then tint key, then label key
         key_img = self.label_key(self.create_key())
-        return key_img.rotate(-self.rotation_angle, resample=Image.BILINEAR, expand=1)
+        return key_img if flat else key_img.rotate(-self.rotation_angle, resample=Image.BILINEAR, expand=1)
+
+    
+    def model(self, scene):
+        # create model, then rotate and place
+        model = self.create_model(scene)
+        model.rotation_euler = (0, 0, math.radians(-self.rotation_angle))
+        model.location = self.get_model_location()[:2] + (0,)
+        return model
 
 
 srgb_profile, lab_profile = ImageCms.createProfile('sRGB'), ImageCms.createProfile('LAB', colorTemp=5000)
@@ -297,7 +395,7 @@ def open_base_img(full_profile, res, base_color, color):
     base_num = str([0xE0, 0xB0, 0x80, 0x50, 0x20].index(base_color) + 1)
 
     # open image and convert to Lab
-    with Image.open('images/{}_{}{}.png'.format(*full_profile, base_num)) as img:
+    with Image.open('images/{0}_{1}{2}.png'.format(*full_profile, base_num)) as img:
         key_img = img.resize((int(s * res / 200) for s in img.size), resample=Image.BILINEAR).convert('RGBA')
     if full_profile[1] in ('ISO', 'BIGENTER'): alpha = key_img.split()[-1]
     l, a, b = ImageCms.applyTransform(key_img, rgb2lab_transform).split()
@@ -338,7 +436,16 @@ def text_size(text, font, line_spacing):
     if len(lines) < 1: return (0, 0)
 
     widths, heights = zip(*(font.getsize(line) for line in lines if len(line) > 0))
-    w, h = max(widths), sum(heights)  # max of line widths, sum of line heights
+    # max of line widths, sum of line heights
+    w, h = max(widths), sum(heights)
     h += line_spacing * (len(lines) - 1)
     return (w, h)
 
+
+def copy_model(name, scene):
+    # duplicate object properties and data, link to scene
+    original_model = scene.objects.get(name)
+    model = original_model.copy()
+    model.data = original_model.data.copy()
+    scene.objects.link(model)
+    return model
