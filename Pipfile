@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pygithub = "*"
+flask-wtf = "*"
+flask-cors = "*"
+flask-restplus = "*"
+lxml = "*"
+pillow-simd = "*"
+colormath = "*"
+gunicorn = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.7"
