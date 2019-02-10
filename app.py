@@ -1,5 +1,5 @@
 import json, github, io, flask_wtf, flask_wtf.file, wtforms, flask_cors
-from flask import Flask, Blueprint, redirect, send_file, render_template, flash, Markup
+from flask import Flask, Blueprint, send_file, render_template, flash, Markup
 from flask_restplus import Api, Resource
 from keyboard import Keyboard
 
@@ -46,6 +46,11 @@ class FromJSON(Resource):
         return serve_pil_image(img)
 
 
+@api.errorhandler(github.GithubException)
+def not_found(error):
+    return {'message': error.message}, 404
+
+
 class InputForm(flask_wtf.FlaskForm):
     url = wtforms.StringField('Copy the URL of a saved layout:')
     valid = [flask_wtf.file.FileAllowed(['json'], 'Upload must be JSON')]
@@ -69,7 +74,7 @@ def index():
                 layout = next(v for k, v in files.items() if k.endswith('.kbd.json'))
                 img = Keyboard(json.loads(layout.content)).render()
                 return serve_pil_image(img)
-            except github.GithubException:
+            except (IndexError, github.GithubException):
                 flash('Not a valid Keyboard Layout Editor gist')
         elif form.json.data:
             try:
