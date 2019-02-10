@@ -32,8 +32,9 @@ def serve_pil_image(pil_img):
 @api.param('id', 'Copy from keyboard-layout-editor.com/#/gists/<id>')
 class FromGist(Resource):
     def get(self, id):
-        files = [v for k, v in github_api.get_gist(id).files.items() if k.endswith('.kbd.json')]
-        img = Keyboard(json.loads(files[0].content)).render()
+        files = github_api.get_gist(id).files
+        layout = next(v for k, v in files.items() if k.endswith('.kbd.json'))
+        img = Keyboard(json.loads(layout.content)).render()
         return serve_pil_image(img)
 
 
@@ -45,12 +46,10 @@ class FromJSON(Resource):
         return serve_pil_image(img)
 
 
-
 class InputForm(flask_wtf.FlaskForm):
     url = wtforms.StringField('Copy the URL of a saved layout:')
-    json = flask_wtf.file.FileField(
-        'Or upload raw JSON:', validators=[flask_wtf.file.FileAllowed(['json'], 'Upload must be JSON')]
-    )
+    valid = [flask_wtf.file.FileAllowed(['json'], 'Upload must be JSON')]
+    json = flask_wtf.file.FileField('Or upload raw JSON:', validators=valid)
 
 
 def flash_errors(form):
@@ -65,9 +64,13 @@ def index():
     form = InputForm()
     if form.validate_on_submit():
         if len(form.url.data) > 0:
-            if ('keyboard-layout-editor.com/#/gists/' in form.url.data):
-                return redirect('/api/'+form.url.data.split('gists/', 1)[1])
-            flash('Not a Keyboard Layout Editor gist')
+            try:
+                files = github_api.get_gist(form.url.data.split('gists/', 1)[1]).files
+                layout = next(v for k, v in files.items() if k.endswith('.kbd.json'))
+                img = Keyboard(json.loads(layout.content)).render()
+                return serve_pil_image(img)
+            except github.GithubException:
+                flash('Not a valid Keyboard Layout Editor gist')
         elif form.json.data:
             try:
                 content = json.loads(form.json.data.read().decode('utf-8'))
