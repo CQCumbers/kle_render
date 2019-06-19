@@ -1,5 +1,5 @@
-import functools, math, requests, io
-from PIL import Image, ImageMath, ImageColor, ImageCms, ImageDraw, ImageFont, ImageFilter
+import functools, math, requests
+from PIL import Image, ImageMath, ImageColor, ImageCms, ImageDraw, ImageFont
 from colormath import color_objects, color_conversions
 
 

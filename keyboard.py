@@ -1,4 +1,4 @@
-import copy, html, lxml.html, re, json, functools
+import copy, html, lxml.html, re, json
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 from key import Key
 
