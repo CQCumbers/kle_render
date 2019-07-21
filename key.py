@@ -94,7 +94,7 @@ class Key:
 
         # center SA and decal labels if not explicitly aligned
         align = self.align if self.align else 0
-        if self.align == None and (self.get_full_profile()[0] == 'SA' or self.decal):
+        if self.align == None and (self.decal or self.get_full_profile()[0] != 'GMK'):
             align = 7 if len(self.labels) == 1 else 5 if len(self.labels) <= 3 else 0
 
         # calculate row/column and font size of each label
