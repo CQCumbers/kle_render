@@ -310,10 +310,14 @@ class Key:
     def pic_key(self, key_img):
         try:
             props = self.get_label_props()
-            position = (x_offset + props['margin_x'], y_offset + props['margin_top'])
+            width, height = int(self.width * self.res), int(self.height * self.res)
             size = (width - props['margin_x'] * 2, height - props['margin_top'] - props['margin_bottom'])
-            with Image.open(requests.get(self.labels[0], stream=True).raw).resize(size) as label_img:
-                key_img.paste(label_img, position, mask=label_img)
+            with Image.open(requests.get(self.labels[0], stream=True).raw) as label_img:
+                label_img.thumbnail(size)
+                label_back = Image.new('RGBA', size)
+                position = int((size[0] - label_img.size[0]) / 2), int((size[1] - label_img.size[1]) / 2)
+                label_back.paste(label_img, position, mask=label_img)
+                key_img.paste(label_back, (props['margin_x'], props['margin_top']), mask=label_back)
             return key_img
         except Exception:
             return key_img
