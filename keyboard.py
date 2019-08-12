@@ -10,7 +10,7 @@ class Keyboard:
     def __init__(self, json):
         # parse keyboard-layout-editor JSON format
         data = deserialise(json)
-        self.keys, self.color = data['keys'], ImageColor.getrgb(data['meta']['backcolor'])
+        self.keys, self.color = data[0], ImageColor.getrgb(data[1])
         self.keyboard = Image.new('RGB', (1000, 1000), color=self.color)
         self.max_size = (0, 0)
 
@@ -92,8 +92,7 @@ def get_labels(key, fa_subs, kb_subs):
 
 def deserialise(rows):
     # Initialize with defaults
-    current = Key()
-    meta, keys = {'backcolor': '#EEEEEE'}, []
+    keys, backcolor, current = [], '#EEEEEE', Key()
     color_format = re.compile(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$')
     default_size = current.label_sizes[0]
     with open('fonts/fa2unicode.json') as fa, open('fonts/kbd-webfont2unicode.json') as kb:
@@ -161,12 +160,14 @@ def deserialise(rows):
                         current.width2 = current.width if current.width2 == 0.0 else current.width2
                     if 'l' in key:
                         current.step = key['l']
+                    if 'g' in key:
+                        current.ghost = key['g']
                     if 'd' in key:
                         current.decal = key['d']
             # End of the row
             current.y += 1.0
+            current.x = 0
         elif 'backcolor' in row:
-            color = row['backcolor'].replace(';', '')
-            meta['backcolor'] = color if color_format.match(color) else meta['backcolor']
-        current.x = 0
-    return {'meta': meta, 'keys': keys}
+            new_backcolor = row['backcolor'].replace(';', '')
+            backcolor = new_backcolor if color_format.match(new_backcolor) else color
+    return keys, backcolor

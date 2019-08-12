@@ -6,8 +6,8 @@ from colormath import color_objects, color_conversions
 class Key:
     __slots__ = [
         'x', 'y', 'width', 'height', 'x2', 'y2', 'width2', 'height2',
-        'rotation_angle', 'rotation_x', 'rotation_y',
-        'res', 'flat', 'str_profile', 'decal', 'step', 'pic', 'color',
+        'rotation_angle', 'rotation_x', 'rotation_y', 'custom_font',
+        'res', 'flat', 'str_profile', 'decal', 'step', 'ghost', 'pic', 'color',
         'align', 'labels', 'label_sizes', 'label_colors', 'model_res',
     ]
 
@@ -22,9 +22,10 @@ class Key:
         self.rotation_x = self.rotation_y = 0.0
 
         self.res = 200
-        self.flat = False
         self.str_profile = 'SA'
-        self.decal = self.step = self.pic = False
+        self.custom_font = self.flat = False
+        self.decal = self.step = False
+        self.ghost = self.pic = False
         self.color = '#EEEEEE'
 
         self.align = None
@@ -61,6 +62,7 @@ class Key:
 
     @functools.lru_cache()
     def get_font_path(self):
+        if self.custom_font: return 'font.ttf'
         return 'fonts/{}_font.ttf'.format(self.get_full_profile()[0])
 
 
@@ -87,7 +89,7 @@ class Key:
         if self.decal:
             props = {'margin_x': .48, 'margin_top': .2, 'margin_bottom': .2, 'line_spacing': .08}
         elif self.get_full_profile()[0] == 'GMK':
-            props = {'margin_x': .22, 'margin_top': .14, 'margin_bottom': .32, 'line_spacing': .06}
+            props = {'margin_x': .22, 'margin_top': .14, 'margin_bottom': .34, 'line_spacing': .06}
         else:
             props = {'margin_x': .22, 'margin_top': .16, 'margin_bottom': .29, 'line_spacing': .08}
         props = {k: int(v * self.res) for k, v in props.items()}
@@ -138,7 +140,7 @@ class Key:
             rx, ry, a = self.rotation_x, self.rotation_y, math.radians(self.rotation_angle)
             x, y = rx + x * math.cos(a) - y * math.sin(a), ry + y * math.cos(a) + x * math.sin(a)
             width, height = width * math.cos(a) - height * math.sin(a), height * math.cos(a) + width * math.sin(a)
-        return (-x * res, y * res, -(x + width) * res, (y + height) * res)
+        return (x, y, x + width, y + height)
 
 
     def get_base_img(self, full_profile):
@@ -149,7 +151,7 @@ class Key:
 
 
     def get_base_model(self, full_profile, scene):
-        return copy_model('{0} {1}'.format(*full_profile), scene)
+        return copy_model('{0}_{1}'.format(*full_profile), scene)
 
 
     def get_decal_img(self):
@@ -200,22 +202,27 @@ class Key:
 
 
     def stretch_model(self, model, width, height):
-        for v in model.data.vertices:
-            if width > 1:
-                # shift right section right
+        if width > 1:
+            # shift right section right
+            for v in model.data.vertices:
                 v.co[0] -= (width - 1) * self.model_res if v.co[0] < -self.model_res / 2 else 0
-            elif width < 1:
-                # keep left section, compress middle section, shift right section left
-                res, mid = self.model_res, width * self.model_res / 2
+        elif width < 1:
+            # keep left section, compress middle section, shift right section left
+            res, mid = self.model_res, width * self.model_res / 2
+            for v in model.data.vertices:
                 v.co[0] = v.co[0] if v.co[0] > -mid else (-mid if v.co[0] > -res + mid else v.co[0] + res - mid * 2)
+            for p in model.data.polygons: p.use_smooth = False
 
-            if height > 1:
-                # shift bottom section down
+        if height > 1:
+            # shift bottom section down
+            for v in model.data.vertices:
                 v.co[1] += (height - 1) * self.model_res if v.co[1] > self.model_res / 2 else 0
-            elif height < 1:
-                # keep top section, compress middle section, shift bottom section up
-                res, mid = self.model_res, height * self.model_res / 2
+        elif height < 1:
+            # keep top section, compress middle section, shift bottom section up
+            res, mid = self.model_res, height * self.model_res / 2
+            for v in model.data.vertices:
                 v.co[1] = v.co[1] if v.co[1] < mid else (mid if v.co[1] < res - mid else v.co[1] - res + mid * 2)
+            for p in model.data.polygons: p.use_smooth = False
 
     
     def create_key(self):
@@ -263,6 +270,8 @@ class Key:
 
     def create_model(self, scene):
         profile, row_profile = self.get_full_profile()
+        if self.str_profile.startswith('DSA'): profile = 'DSA'
+
         if self.decal:
             return self.get_decal_model(scene)
         elif row_profile in ('ISO', 'BIGENTER'):
@@ -288,7 +297,7 @@ class Key:
                 # add left step
                 if x2 < 0:
                     left_step = self.get_base_model((profile, row_profile), scene)
-                    for v in left_step.data.vertices: v.co[0] = -model_res + 0.001 - v.co[0]
+                    for v in left_step.data.vertices: v.co[0] = -model_res * 0.97 - v.co[0]
                     self.stretch_model(left_step, -x2 + 0.333, height)
                     left_step.parent = key_model
                 # add right step
@@ -377,14 +386,17 @@ class Key:
         self.res, self.flat = int(self.res / scale), flat
         # create key, then tint key, then label key
         key_img = self.label_key(self.create_key())
-        return key_img if flat else key_img.rotate(-self.rotation_angle, resample=Image.BILINEAR, expand=1)
+        if self.ghost: key_img.putalpha(Image.new('L', key_img.size, color=64))
+        if not flat: key_img = key_img.rotate(-self.rotation_angle, resample=Image.BILINEAR, expand=1)
+        return key_img
 
     
     def model(self, scene):
         # create model, then rotate and place
         model = self.create_model(scene)
+        location, res = self.get_model_location(), self.model_res
         model.rotation_euler = (0, 0, math.radians(-self.rotation_angle))
-        model.location = self.get_model_location()[:2] + (0,)
+        model.location = (-location[0] * res, location[1] * res, 0)
         return model
 
 
@@ -451,5 +463,5 @@ def copy_model(name, scene):
     original_model = scene.objects.get(name)
     model = original_model.copy()
     model.data = original_model.data.copy()
-    scene.objects.link(model)
+    scene.collection.objects.link(model)
     return model
