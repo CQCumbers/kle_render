@@ -22,7 +22,7 @@ class Key:
         self.rotation_x = self.rotation_y = 0.0
 
         self.res = 200
-        self.str_profile = 'SA'
+        self.str_profile = 'GMK'
         self.custom_font = self.flat = False
         self.decal = self.step = False
         self.ghost = self.pic = False
@@ -39,7 +39,7 @@ class Key:
     def get_full_profile(self):
         # only GMK and SA base images
         full_profile = self.str_profile.upper().split(' ')
-        profile = 'GMK' if full_profile[0] in ('GMK', 'DCS', 'OEM') else 'SA'
+        profile = 'SA' if full_profile[0] in ('SA', 'DSA') else 'GMK'
 
         # row profile used to specify keys with special base images
         props = (self.width, self.height, self.x2, self.y2, self.width2, self.height2)
@@ -105,8 +105,8 @@ class Key:
         props.update({'font_sizes': [], 'positions': []})
         for i in range(min(len(self.labels), 12)):
             row, col = (int(pattern.index(i) / 3), pattern.index(i) % 3)
-            col = (1 if col < 1 else None) if (center_col and row < 3) or (center_front and row > 2) else col
-            row = (1 if row < 1 else None) if (center_row and row < 3) else row
+            col = (1 if col < 1 else -1) if (center_col and row < 3) or (center_front and row > 2) else col
+            row = (1 if row < 1 else -1) if (center_row and row < 3) else row
             label_size = self.label_sizes[i] if row != None and row < 3 else 3.0
             props['font_sizes'].append(int(.09 * self.res + .03 * self.res * label_size))
             props['positions'].append((row, col))
@@ -364,7 +364,7 @@ class Key:
             # load font and calculate text dimensions
             font = ImageFont.truetype(self.get_font_path(), props['font_sizes'][i])
             text = break_text(text, font, width - props['margin_x'] * 2) if not self.decal else text
-            text = text.upper() if self.get_full_profile()[0] == 'SA' and not self.decal else text
+            text = text.upper() if self.get_full_profile()[0] != 'GMK' and not self.decal else text
             text_width, text_height = text_size(text, font, props['line_spacing'])
             # retrieve label color and lighten to simulate reflectivity
             color = ImageColor.getrgb(self.label_colors[i])
