@@ -1,6 +1,6 @@
 import json, github, io, flask_wtf, flask_wtf.file, wtforms, flask_cors
 from flask import Flask, Blueprint, send_file, render_template, flash, Markup
-from flask_restplus import Api, Resource
+from flask_restx import Api, Resource
 from keyboard import Keyboard
 
 

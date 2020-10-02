@@ -7,7 +7,7 @@ name = "pypi"
 pygithub = "*"
 flask-wtf = "*"
 flask-cors = "*"
-flask-restplus = "*"
+flask-restx = "*"
 lxml = "*"
 pillow-simd = "*"
 colormath = "*"
@@ -16,4 +16,4 @@ gunicorn = "*"
 [dev-packages]
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"
