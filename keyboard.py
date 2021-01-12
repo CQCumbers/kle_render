@@ -168,6 +168,6 @@ def deserialise(rows):
             current.y += 1.0
             current.x = 0
         elif 'backcolor' in row:
-            new_backcolor = row['backcolor'].replace(';', '')
-            backcolor = new_backcolor if color_format.match(new_backcolor) else color
+            new_color = row['backcolor'].replace(';', '')
+            backcolor = new_color if color_format.match(new_color) else backcolor
     return keys, backcolor
