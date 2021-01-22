@@ -87,7 +87,7 @@ class Key:
     
     def get_label_props(self):
         if self.decal:
-            props = {'margin_x': .48, 'margin_top': .2, 'margin_bottom': .2, 'line_spacing': .08}
+            props = {'margin_x': .22, 'margin_top': .2, 'margin_bottom': .2, 'line_spacing': .08}
         elif self.get_full_profile()[0] == 'GMK':
             props = {'margin_x': .22, 'margin_top': .14, 'margin_bottom': .34, 'line_spacing': .06}
         else:
@@ -154,23 +154,6 @@ class Key:
         return copy_model('{0}_{1}'.format(*full_profile), scene)
 
 
-    def get_decal_img(self):
-        # calculate width and height of image to fit decal label
-        label_props = self.get_label_props()
-        font = ImageFont.truetype(self.get_font_path(), label_props['font_sizes'][0])
-        w, h = text_size(self.labels[0], font, label_props['line_spacing'])
-        key_img = Image.new('RGBA', (w + label_props['margin_x'] * 2, h + label_props['margin_top'] * 2))
-        return key_img
-
-
-    def get_decal_model(self, scene):
-        # copy dimensions of image decal
-        width, height = self.get_decal_img().size
-        model = copy_model('DECAL', scene)
-        self.stretch_model(model, width / self.res, height / self.res)
-        return model
-
-
     def stretch_img(self, base_img, width, height): 
         w, h = base_img.size
         new_img = Image.new('RGBA', (width, height)) 
@@ -228,7 +211,7 @@ class Key:
     def create_key(self):
         profile, row_profile = self.get_full_profile()
         if self.decal:
-            return self.get_decal_img()
+            return Image.new('RGBA', (int(self.width * self.res + 1), int(self.height * self.res)))
         elif row_profile in ('ISO', 'BIGENTER'):
             return self.get_base_img((profile, row_profile)).copy()
         elif self.width2 == 0.0 and self.height2 == 0.0:
@@ -273,7 +256,9 @@ class Key:
         if self.str_profile.startswith('DSA'): profile = 'DSA'
 
         if self.decal:
-            return self.get_decal_model(scene)
+            model = copy_model('DECAL', scene)
+            self.stretch_model(model, self.width, self.height)
+            return model
         elif row_profile in ('ISO', 'BIGENTER'):
             return self.get_base_model((profile, row_profile), scene)
         elif self.width2 == 0.0 and self.height2 == 0.0:

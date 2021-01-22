@@ -9,7 +9,7 @@ flask-wtf = "*"
 flask-cors = "*"
 flask-restx = "*"
 lxml = "*"
-pillow-simd = "*"
+pillow = "*"
 colormath = "*"
 gunicorn = "*"
 
