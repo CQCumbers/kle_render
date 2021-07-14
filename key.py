@@ -1,5 +1,6 @@
 import functools, math, requests
-from PIL import Image, ImageMath, ImageColor, ImageCms, ImageDraw, ImageFont
+from PIL import Image, ImageMath, ImageColor, ImageCms
+from PIL import ImageDraw, ImageFont, ImageOps
 from colormath import color_objects, color_conversions
 
 
@@ -307,11 +308,8 @@ class Key:
             width, height = int(self.width * self.res), int(self.height * self.res)
             size = (width - props['margin_x'] * 2, height - props['margin_top'] - props['margin_bottom'])
             with Image.open(requests.get(self.labels[0], stream=True).raw) as label_img:
-                label_img.thumbnail(size)
-                label_back = Image.new('RGBA', size)
-                position = int((size[0] - label_img.size[0]) / 2), int((size[1] - label_img.size[1]) / 2)
-                label_back.paste(label_img, position, mask=label_img)
-                key_img.paste(label_back, (props['margin_x'], props['margin_top']), mask=label_back)
+                pic_img = ImageOps.pad(label_img, size, method=Image.BILINEAR)
+                key_img.paste(pic_img, (props['margin_x'], props['margin_top']), mask=pic_img)
             return key_img
         except Exception:
             return key_img
