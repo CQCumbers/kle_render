@@ -1,4 +1,4 @@
-import copy, html, lxml.html, re, json
+import copy, html, lxml.html, re, json, requests, tinycss2
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 from key import Key
 
@@ -90,6 +90,40 @@ def get_labels(key, fa_subs, kb_subs):
     return (labels, False)
 
 
+def decl_name(decls, name, pred):
+    # extract declaration with name from list
+    for node in decls:
+        if node.type != 'declaration': continue
+        if node.lower_name != name: continue
+        return next((x.value for x in node.value if pred(x)), '')
+
+
+def get_fonts(css):
+    # define helper functions
+    def is_str(x): return x.type == 'string' or x.type == 'ident'
+    def is_ttf(x): return x.type == 'url' and '.ttf' in x.value
+
+    fonts, ttfs = [None] * 12, {}
+    for rule in tinycss2.parse_stylesheet(css):
+        # set fonts using keylabel styles
+        if rule.type == 'qualified-rule':
+            decls = tinycss2.parse_declaration_list(rule.content)
+            font = ttfs.get(decl_name(decls, 'font-family', is_str))
+            for sel in rule.prelude:
+                for i in range(12):
+                    if sel == '*': fonts[i] = fonts[i] or font
+                    if sel.type != 'ident': continue
+                    if sel.lower_value == f'keylabel{i}': fonts[i] = font
+
+        # download ttfs from @font-face
+        if rule.type == 'at-rule' and rule.lower_at_keyword == 'font-face':
+            decls = tinycss2.parse_declaration_list(rule.content)
+            name = decl_name(decls, 'font-family', is_str)
+            url = decl_name(decls, 'src', is_ttf)
+            if (url): ttfs[name] = requests.get(url).content
+    return fonts
+
+
 def deserialise(rows):
     # Initialize with defaults
     keys, backcolor, current = [], '#EEEEEE', Key()
@@ -167,7 +201,12 @@ def deserialise(rows):
             # End of the row
             current.y += 1.0
             current.x = 0
-        elif 'backcolor' in row:
-            new_color = row['backcolor'].replace(';', '')
-            backcolor = new_color if color_format.match(new_color) else backcolor
+        else:
+            # Parse global properties
+            if 'backcolor' in row:
+                new_color = row['backcolor'].replace(';', '')
+                backcolor = new_color if color_format.match(new_color) else backcolor
+            if 'css' in row:
+                try: current.fonts = get_fonts(row['css'])
+                except Exception: pass
     return keys, backcolor

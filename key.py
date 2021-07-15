@@ -1,4 +1,4 @@
-import functools, math, requests
+import functools, io, math, requests
 from PIL import Image, ImageMath, ImageColor, ImageCms
 from PIL import ImageDraw, ImageFont, ImageOps
 from colormath import color_objects, color_conversions
@@ -7,7 +7,7 @@ from colormath import color_objects, color_conversions
 class Key:
     __slots__ = [
         'x', 'y', 'width', 'height', 'x2', 'y2', 'width2', 'height2',
-        'rotation_angle', 'rotation_x', 'rotation_y', 'custom_font',
+        'rotation_angle', 'rotation_x', 'rotation_y', 'fonts',
         'res', 'flat', 'str_profile', 'decal', 'step', 'ghost', 'pic', 'color',
         'align', 'labels', 'label_sizes', 'label_colors', 'model_res',
     ]
@@ -24,8 +24,8 @@ class Key:
 
         self.res = 200
         self.str_profile = 'GMK'
-        self.custom_font = self.flat = False
-        self.decal = self.step = False
+        self.fonts = [None] * 12
+        self.flat = self.decal = self.step = False
         self.ghost = self.pic = False
         self.color = '#EEEEEE'
 
@@ -62,9 +62,10 @@ class Key:
 
 
     @functools.lru_cache()
-    def get_font_path(self):
-        if self.custom_font: return 'font.ttf'
-        return 'fonts/{}_font.ttf'.format(self.get_full_profile()[0])
+    def get_font(self, i, size):
+        default = 'fonts/{}_font.ttf'.format(self.get_full_profile()[0])
+        try: return ImageFont.truetype(io.BytesIO(self.fonts[i]), size)
+        except Exception: return ImageFont.truetype(default, size)
 
 
     @functools.lru_cache()
@@ -345,7 +346,7 @@ class Key:
             if not text or row == None: continue
 
             # load font and calculate text dimensions
-            font = ImageFont.truetype(self.get_font_path(), props['font_sizes'][i])
+            font = self.get_font(row * 3 + col, props['font_sizes'][i])
             text = break_text(text, font, width - props['margin_x'] * 2) if not self.decal else text
             text = text.upper() if self.get_full_profile()[0] != 'GMK' and not self.decal else text
             text_width, text_height = text_size(text, font, props['line_spacing'])

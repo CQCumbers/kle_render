@@ -12,6 +12,7 @@ lxml = "*"
 pillow = "*"
 colormath = "*"
 gunicorn = "*"
+tinycss2 = "*"
 
 [dev-packages]
 
