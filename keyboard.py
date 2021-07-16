@@ -171,7 +171,7 @@ def deserialise(rows):
                         current.color = color if color_format.match(color) else current.color
                     if 't' in key:
                         colors = [line.replace(';', '') for line in key['t'].splitlines()]
-                        default_color = colors[0] if color_format.match(colors[0]) else '#000'
+                        default_color = colors[0] if colors and color_format.match(colors[0]) else '#000'
                         colors = [color if color_format.match(color) else default_color for color in colors]
                         current.label_colors = colors[:12] + [default_color] * (12 - len(colors)) 
                     if 'x' in key:
