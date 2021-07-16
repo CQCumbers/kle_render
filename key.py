@@ -349,7 +349,7 @@ class Key:
             font = self.get_font(row * 3 + col, props['font_sizes'][i])
             text = break_text(text, font, width - props['margin_x'] * 2) if not self.decal else text
             text = text.upper() if self.get_full_profile()[0] != 'GMK' and not self.decal else text
-            text_width, text_height = text_size(text, font, props['line_spacing'])
+            text_width, text_height = font.getsize_multiline(text, spacing=props['line_spacing'])
             # retrieve label color and lighten to simulate reflectivity
             color = ImageColor.getrgb(self.label_colors[i])
             color = color if self.flat else tuple(band + 0x26 for band in color)
@@ -428,18 +428,6 @@ def break_text(text, font, limit):
         else:
             lines.append(word + ' ')
     return '\n'.join([line[:-1] for line in lines])
-
-
-@functools.lru_cache()
-def text_size(text, font, line_spacing):
-    lines = text.splitlines()
-    if len(lines) < 1: return (0, 0)
-
-    widths, heights = zip(*(font.getsize(line) for line in lines if len(line) > 0))
-    # max of line widths, sum of line heights
-    w, h = max(widths), sum(heights)
-    h += line_spacing * (len(lines) - 1)
-    return (w, h)
 
 
 def copy_model(name, scene):
