@@ -92,6 +92,7 @@ class Key:
             props = {'margin_x': .22, 'margin_top': .2, 'margin_bottom': .2, 'line_spacing': .08}
         elif self.get_full_profile()[0] == 'GMK':
             props = {'margin_x': .22, 'margin_top': .14, 'margin_bottom': .34, 'line_spacing': .06}
+            if len(self.labels) and self.label_sizes[0] == 8: props['margin_top'] -= 0.05;
         else:
             props = {'margin_x': .22, 'margin_top': .16, 'margin_bottom': .29, 'line_spacing': .08}
         props = {k: int(v * self.res) for k, v in props.items()}
