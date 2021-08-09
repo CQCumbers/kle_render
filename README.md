@@ -8,7 +8,9 @@ This project uses Python, Pillow, and Flask to serve up more realistic visualiza
 KLE-Render should support any layout created with keyboard-layout-editor though some may not render exactly as expected. Specifically, certain very uncommon unicode glyphs may not be displayed. Custom legend images take up the full width of the keycap and only one per key can be used. The base images are only of SA and GMK keycaps, but most layouts in DSA, DCS, OEM, or even beamspring profiles should still look pretty close. Sculpted row profiles are not supported; everything is assumed to be uniform row 3.
 
 ### How do I include icons and novelties in my layout?
-Many common icons and symbols are part of [Unicode](https://unicode-table.com), and can be rendered simply by pasting the appropriate character into the legend text boxes in keyboard-layout-editor. Others are available as part of the Font Awesome or Keyboard-Layout-Editor icon sets under the Character Picker dropdown. For truly custom legends though, you'll have to use an html image tag, like this one `<img src='http://i.imgur.com/QtgaNKa.png' width='30'>`. The src parameter here should point to a PNG image with your legend on a transparent background. Note that KLE-Render does not support combining these custom legend images with regular text on the same key, and ignores any sizing or position info - the image is always resized to cover the entire top of the keycap.
+Many common icons and symbols are part of [Unicode](https://unicode-table.com), and can be rendered simply by pasting the appropriate character into the legend text boxes in keyboard-layout-editor. To match the default GMK icons, you can copy characters from the [GMK Icons Template](http://www.keyboard-layout-editor.com/#/gists/afc75b1f6ebee743ff0e2f589b0fc68d). Less common icons are available as part of the Font Awesome or Keyboard-Layout-Editor icon sets under the Character Picker dropdown.
+
+For truly custom legends though, you'll have to use an html image tag, like this one `<img src='http://i.imgur.com/QtgaNKa.png' width='30'>`. The src parameter here should point to a PNG image with your legend on a transparent background. Note that KLE-Render does not support combining these custom legend images with regular text on the same key, and ignores any sizing or position info - the image is always resized to cover the entire top of the keycap.
 
 ### Are custom fonts supported?
 There is limited support for custom fonts, but this should be considered an advanced feature. Most layouts won't work without some changes to the custom styling. For more details on how and why see [issue #7](https://github.com/CQCumbers/kle_render/issues/7#issuecomment-880827473).
@@ -32,6 +34,7 @@ The following templates have their legend sizes and keycap profiles pre-configur
 - Mech27 (TKL) - [SA](http://www.keyboard-layout-editor.com/#/gists/10629d008a99d8d6eb6f8c59414b5dd8)/[GMK](http://www.keyboard-layout-editor.com/#/gists/6e6692825b348f40c040ca9750e469a8)
 - Espectro (96%) - [SA](http://www.keyboard-layout-editor.com/#/gists/6b996bea3ebf8a85866ddea606e25de4)/[GMK](http://www.keyboard-layout-editor.com/#/gists/6a03012a82e7bbca14db635142913a7)
 - Triangle (Full-size) - [SA](http://www.keyboard-layout-editor.com/#/gists/b86a688e6502fcc910d4b32ca2fa642e)/[GMK](http://www.keyboard-layout-editor.com/#/gists/11f7fc1a19c7f2210f560a93c8ab82a2)
+- Modifier Icons - [GMK](http://www.keyboard-layout-editor.com/#/gists/afc75b1f6ebee743ff0e2f589b0fc68d)
 
 ## Sample Image
 Nantucket Selectric ([JSON](http://www.keyboard-layout-editor.com/#/gists/4de8adb88cb4c45c2f43))
