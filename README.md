@@ -10,7 +10,7 @@ KLE-Render should support any layout created with keyboard-layout-editor though 
 ### How do I include icons and novelties in my layout?
 Many common icons and symbols are part of [Unicode](https://unicode-table.com), and can be rendered simply by pasting the appropriate character into the legend text boxes in keyboard-layout-editor. To match the default GMK icons, you can copy characters from the [GMK Icons Template](http://www.keyboard-layout-editor.com/#/gists/afc75b1f6ebee743ff0e2f589b0fc68d). Less common icons are available as part of the Font Awesome or Keyboard-Layout-Editor icon sets under the Character Picker dropdown.
 
-For truly custom legends though, you'll have to use an html image tag, like this one `<img src='http://i.imgur.com/QtgaNKa.png' width='30'>`. The src parameter here should point to a PNG image with your legend on a transparent background. Note that KLE-Render does not support combining these custom legend images with regular text on the same key, and ignores any sizing or position info - the image is always resized to cover the entire top of the keycap.
+For truly custom legends though, you'll have to use an html image tag, like this one `<img src='http://i.imgur.com/QtgaNKa.png' width='30'>`. The src parameter here should point to a PNG image with your legend on a transparent background. Note that KLE-Render does not support combining these custom legend images with regular text on the same key, and ignores any sizing or position info - the image is always resized to cover the entire top of the keycap. For reference see the SA and GMK kitting templates below.
 
 ### Are custom fonts supported?
 There is limited support for custom fonts, but this should be considered an advanced feature. Most layouts won't work without some changes to the custom styling. For more details on how and why see [issue #7](https://github.com/CQCumbers/kle_render/issues/7#issuecomment-880827473).
@@ -28,6 +28,7 @@ If you're looking to create a keycap set for a group buy livingspeedbump (creato
 ## Templates
 The following templates have their legend sizes and keycap profiles pre-configured for accurate rendering. Use them as a starting point for your own designs!
 
+- Example Kitting - [SA](http://www.keyboard-layout-editor.com/#/gists/6331e126fa6340711e53a0806d57cde5)/[GMK](http://www.keyboard-layout-editor.com/#/gists/a3a9791b1068f1100b151c33debf660f)
 - Mech Mini 2 (40%) - [SA](http://www.keyboard-layout-editor.com/#/gists/ea2a231112ffceae047494ac9a93e706)/[GMK](http://www.keyboard-layout-editor.com/#/gists/eed1f1854dda3999bcdd730f0143c627)
 - Klippe (60%) - [SA](http://www.keyboard-layout-editor.com/#/gists/f8369e8d6ae12c6d30bbf6db9731bca5)/[GMK](http://www.keyboard-layout-editor.com/#/gists/c2aedbf20e6a1ee5320a0f89b114d6da)
 - RAMA M65 (65%) - [SA](http://www.keyboard-layout-editor.com/#/gists/3ca3649e1d048134ddd0e835d1dd735b)/[GMK](http://www.keyboard-layout-editor.com/#/gists/4319599274157d2a0dd0e38328b76878)

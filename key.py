@@ -310,6 +310,7 @@ class Key:
             width, height = int(self.width * self.res), int(self.height * self.res)
             size = (width - props['margin_x'] * 2, height - props['margin_top'] - props['margin_bottom'])
             with Image.open(requests.get(self.labels[0], stream=True).raw) as label_img:
+                label_img = label_img.convert('RGBA')
                 pic_img = ImageOps.pad(label_img, size, method=Image.BILINEAR)
                 key_img.paste(pic_img, (props['margin_x'], props['margin_top']), mask=pic_img)
             return key_img
