@@ -381,8 +381,10 @@ class Key:
         # create model, then rotate and place
         model = self.create_model(scene)
         location, res = self.get_model_location(), self.model_res
-        model.rotation_euler = (0, 0, math.radians(-self.rotation_angle))
-        model.location = (-location[0] * res, location[1] * res, 0)
+        model.rotation_euler[2] = math.radians(-self.rotation_angle)
+        model.location[0] -= location[0] * res
+        model.location[1] += location[1] * res * math.cos(model.rotation_euler[0])
+        model.location[2] += location[1] * res * math.sin(model.rotation_euler[0])
         return model
 
 

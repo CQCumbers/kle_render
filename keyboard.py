@@ -113,7 +113,8 @@ def get_fonts(css):
                 for i in range(12):
                     if sel == '*': fonts[i] = fonts[i] or font
                     if sel.type != 'ident': continue
-                    if sel.lower_value == f'keylabel{i}': fonts[i] = font
+                    ids = ('keylabels', 'keylabel', f'keylabel{i}')
+                    if sel.lower_value in ids: fonts[i] = font
 
         # download ttfs from @font-face
         if rule.type == 'at-rule' and rule.lower_at_keyword == 'font-face':
