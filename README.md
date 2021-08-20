@@ -31,11 +31,13 @@ The following templates have their legend sizes and keycap profiles pre-configur
 - Example Kitting - [SA](http://www.keyboard-layout-editor.com/#/gists/6331e126fa6340711e53a0806d57cde5)/[GMK](http://www.keyboard-layout-editor.com/#/gists/a3a9791b1068f1100b151c33debf660f)
 - Mech Mini 2 (40%) - [SA](http://www.keyboard-layout-editor.com/#/gists/ea2a231112ffceae047494ac9a93e706)/[GMK](http://www.keyboard-layout-editor.com/#/gists/eed1f1854dda3999bcdd730f0143c627)
 - Klippe (60%) - [SA](http://www.keyboard-layout-editor.com/#/gists/f8369e8d6ae12c6d30bbf6db9731bca5)/[GMK](http://www.keyboard-layout-editor.com/#/gists/c2aedbf20e6a1ee5320a0f89b114d6da)
+- J-02 (HHKB) - [SA](http://www.keyboard-layout-editor.com/#/gists/1e01f5c46bcc3ba388f84d3a26f2e2eb)/[GMK](http://www.keyboard-layout-editor.com/#/gists/d5ef16b69b4ea15569d7a319bbf90a8e)
 - RAMA M65 (65%) - [SA](http://www.keyboard-layout-editor.com/#/gists/3ca3649e1d048134ddd0e835d1dd735b)/[GMK](http://www.keyboard-layout-editor.com/#/gists/4319599274157d2a0dd0e38328b76878)
 - GMMK Pro (75%) - [SA](http://www.keyboard-layout-editor.com/#/gists/c1a1d76bfcd236bc36e1c04c1e86a0d8)/[GMK](http://www.keyboard-layout-editor.com/#/gists/8ab0de3dd5dc804ecb052924a1c45be5)
 - JP01 (Arisu) - [SA](http://www.keyboard-layout-editor.com/#/gists/4f06c7adcce33046a463084af34aae60)/[GMK](http://www.keyboard-layout-editor.com/#/gists/de533ff9b29225bb65a6155151030673)
 - Mech27 (TKL) - [SA](http://www.keyboard-layout-editor.com/#/gists/10629d008a99d8d6eb6f8c59414b5dd8)/[GMK](http://www.keyboard-layout-editor.com/#/gists/6e6692825b348f40c040ca9750e469a8)
 - Espectro (96%) - [SA](http://www.keyboard-layout-editor.com/#/gists/6b996bea3ebf8a85866ddea606e25de4)/[GMK](http://www.keyboard-layout-editor.com/#/gists/6a03012a82e7bbca14db635142913a7)
+- Cypher (1800-like) - [SA](http://www.keyboard-layout-editor.com/#/gists/9b5535a779ae9f095da3b8a73a39a3cf)/[GMK](http://www.keyboard-layout-editor.com/#/gists/27bc8c126110952cc77c69ef972a7d0d)
 - Triangle (Full-size) - [SA](http://www.keyboard-layout-editor.com/#/gists/b86a688e6502fcc910d4b32ca2fa642e)/[GMK](http://www.keyboard-layout-editor.com/#/gists/11f7fc1a19c7f2210f560a93c8ab82a2)
 - Modifier Icons - [GMK](http://www.keyboard-layout-editor.com/#/gists/afc75b1f6ebee743ff0e2f589b0fc68d)
 
