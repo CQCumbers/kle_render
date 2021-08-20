@@ -62,10 +62,11 @@ class Key:
 
 
     @functools.lru_cache()
-    def get_font(self, i, size):
-        default = 'fonts/{}_font.ttf'.format(self.get_full_profile()[0])
+    def get_font(self, i, size, symbol):
+        path = 'fonts/{}_font.ttf'.format(self.get_full_profile()[0])
+        if symbol: return ImageFont.truetype(path, size)
         try: return ImageFont.truetype(io.BytesIO(self.fonts[i]), size)
-        except Exception: return ImageFont.truetype(default, size)
+        except Exception: return ImageFont.truetype(path, size)
 
 
     @functools.lru_cache()
@@ -348,7 +349,8 @@ class Key:
             if not text or row == None: continue
 
             # load font and calculate text dimensions
-            font = self.get_font(row * 3 + col, props['font_sizes'][i])
+            symbol = any(0x2190 <= ord(c) <= 0x26ff for c in text)
+            font = self.get_font(row * 3 + col, props['font_sizes'][i], symbol)
             text = break_text(text, font, width - props['margin_x'] * 2) if not self.decal else text
             text = text.upper() if self.get_full_profile()[0] != 'GMK' and not self.decal else text
             text_width, text_height = font.getsize_multiline(text, spacing=props['line_spacing'])
